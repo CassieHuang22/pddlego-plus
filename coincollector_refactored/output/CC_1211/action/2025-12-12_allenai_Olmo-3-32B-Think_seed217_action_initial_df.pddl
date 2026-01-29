@@ -1,0 +1,20 @@
+(define (domain exploration)
+  (:requirements :strips)
+  (:types location direction)
+  (:action open-door
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+    :effect (open ?loc1 ?loc2 ?dir)
+            (not (closed ?loc1 ?loc2 ?dir))
+  )
+  (:action move
+    :parameters (?from - location ?to - location ?dir - direction)
+    :effect (at ?to)
+            (not (at ?from))
+  )
+  (:predicates
+    (at ?loc)
+    (open ?loc1 ?loc2 ?dir)
+    (closed ?loc1 ?loc2 ?dir)
+    (location ?loc)
+  )
+)

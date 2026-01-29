@@ -1,0 +1,1 @@
+(define (domain exploration) (types location direction) (predicates (at ?x - location) (open ?d - direction)) (:action open-door :parameters (?loc1 - location ?loc2 - location ?dir - direction) :effect (open ?dir)) (:action move :parameters (?from - location ?to - location ?dir - direction) :precondition (and (at ?from) (open ?dir)) :effect (at ?to)))

@@ -1,0 +1,2314 @@
+Problem: pick_and_place_simple-SaltShaker-None-Drawer-10
+Type: pick_and_place_simple -> basic
+Path: /home/yl3427/.cache/alfworld/json_2.1.1/valid_unseen/pick_and_place_simple-SaltShaker-None-Drawer-10/trial_T20190909_021650_880235/initial_state.pddl
+Observations: -= Welcome to TextWorld, ALFRED! =-
+You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+Valid Actions: ['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to cabinet 5', 'go to cabinet 6', 'go to coffeemachine 1', 'go to countertop 1', 'go to countertop 2', 'go to countertop 3', 'go to drawer 1', 'go to drawer 2', 'go to drawer 3', 'go to fridge 1', 'go to garbagecan 1', 'go to microwave 1', 'go to shelf 1', 'go to shelf 2', 'go to shelf 3', 'go to sinkbasin 1', 'go to stoveburner 1', 'go to stoveburner 2', 'go to stoveburner 3', 'go to stoveburner 4', 'go to toaster 1']
+Goal: Your task is to: put a saltshaker in drawer.
+
+
+====Step 0====
+
+----Larger Loop No. 0----
+successful_actions: []
+Small Loop, action_queue: []
+--Small Loop--: 0
+=== PROMPT SENT TO LLM ===
+Please provide the output in strict JSON format, without any additional text or explanation, including a PDDL domain file as 'df' and a PDDL problem file as 'pf'. 
+The format should strictly be:
+    {{
+    "df": "...",
+    "pf": "..."
+    }}
+
+
+        You are in an environment that you must explore step by step. Your task is to build and update PDDL files for the environment using only your direct observations. Do not create or assume any objects, relationships, or details that have not been observed, and ensure you include all observations.
+
+        The environment is a room containing various objects. Some of these objects are on, in, or contained within other objects and receptacles. You will initially be located as init_receptacle. You can assume all receptacles are freely reachable.
+        
+        Now, Your task is to: put a saltshaker in drawer.
+        Here are your current observations: Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+        Only the following actions are allowed: (There are only two types: object and receptacle)
+        1. go to a receptacle
+            :action GotoLocation
+            :parameters (?from - receptacle ?to - receptacle)
+        2. open a receptacle if it is closed
+            :action OpenObject
+            :parameters (?r - receptacle)
+        3. close a receptacle
+            :action CloseObject
+            :parameters (?r - receptacle)
+        4. take an object from another receptacle
+            :action PickupObject
+            :parameters (?o - object ?r - receptacle)
+        5. put object into/on/in another receptacle
+            :action PutObject
+            :parameters (?o - object ?r - receptacle)
+        6. using an object/receptacle by turning it on/off with a switch
+            :action useObject
+            :parameters (?o - object)
+        7. heat an object using a receptacle
+            :action HeatObject
+            :parameters (?o - object ?r - microwaveReceptacle)
+        8. clean an object using a receptacle
+            :action CleanObject
+            :parameters (?o - object ?r - sinkbasinReceptacle)
+        9. cool an object using a receptacle
+            :action CoolObject
+            :parameters (?o - object ?r - fridgeReceptacle)
+        10. slice an object using a sharp object
+            :action SliceObject
+            :parameters (?r - receptacle ?co - object ?sharp_o - sharpObject)
+
+        You must go to a receptacle first in order to use/open it or take/put objects from/on it.
+
+        The process involves two main stages:
+
+        1. Always searching for the aim Object first!!!
+            In this stage, your goal is to go to and may need to open new, unvisited recepatacles until you find the object mentioned in the task. Some receptacles cannot be opened so you can directly see what objects after you go to that receptacle.
+
+            You can only use the GotoLocation action to travel to a new location and the OpenObject action (if the receptacle is closed) to verify whether it contains the target object.
+
+            Goal 1.1: Reach a location that has not been visited (the location should be a receptacle) using the GotoLocation action. 
+                You goal should look like this:
+                (:goal 
+                    (at ?recepatacle)
+                ) where recepatacle should be somewhere or some recepatacles not visited.
+
+            Goal 1.2: If you already go to the recepatacle and found the recepatacle is closed, use the OpenObject action to open it and inspect the contents. 
+                Your goal should look like this:
+                (:goal 
+                    (opened ?recepatacle)
+                ) where recepatacle should be the recepatacle you want to open.
+
+        2. After you seeing the aim object in any receptacle, using the Object to Complete the Task:
+            After you have located the object (the object may have some numbers added), you should always first pick up the object from that receptacle and update your goal to focus on how the object is used to complete the task. Remember your goal is Your task is to: put a saltshaker in drawer.. Based on different adjectives, you may need to perform different actions for the object in different ways.
+
+            This may involve more than simply transferring it from one place to another.
+            For example: You might examine the object or a nearby receptacle to gather information. You may need to use another tool or device (like a lamp or a switch). Some tasks require you to slice, heat, cool, or clean the object using an appropriate receptacle (e.g., microwave, sink, fridge).
+
+            If necessary, use the PickupObject action to retrieve the item, and the GotoLocation action to move to the correct place.
+            Then, apply the object in a purposeful way — not just move it — but interact with the environment to fulfill the task’s actual goal.
+
+            Hint: 
+            1. If you want to heat, clean, and cool an object, after you go to that aim receptacle, do not put the object in the receptacle but do the action directly. For example, go to fridge, then cool the object with receptacle.
+            2. If you want to slice an object, you should first go to the receptacle where both the sharp object and the aim object are located and ONLY pick up the sharp object then do the slice action. Don't forget to put the sharp object back to the receptacle after you finish slicing.
+            3. If you want to examine or look at an object with a lamp, you should first go to the receptacle where the object is located and then pick it up and take the USE action of the lamp. You don't need to take the lamp but directly use it.
+            4. If there are multiple actions needed to complete the task, you can break them down into smaller subgoals. For example, if you need to slice and then heat an object, first focus on slicing it, and then move on to heating it.
+
+        In summary, the first stage is all about finding the object—this might involve going to an unvisited receptacle and opening it if necessary.
+        
+        Note: 
+        1. some receptacles have numbers in their names. Always keep them as they are. For example, "towelholder1" should not be changed to "towelholder".
+        2. Your initial goal should always be to go to a new location instead of put something into somewhere.
+        3. Do not enter stage 2 when not finishing stage 1.
+
+        Note: Always include :negative-preconditions in your :requirements whenever you use (not …) or delete effects, and never leave an :precondition or :effect block empty—either omit it or include at least one literal.
+    
+=== END PROMPT ===
+=== RAW LLM RESPONSE ===
+{
+  "df": "(define (domain saltshaker-in-drawer) \n  (:requirements :strips :typing :negative-preconditions)\n  (:types receptacle object)\n  (:predicates \n    (at ?x - receptacle)\n    (opened ?r - receptacle)\n    (holding ?o - object)\n    (at ?o - object ?r - receptacle)\n    (closed ?r - receptacle)\n    (drawer ?r - receptacle)\n    (fridgeReceptacle ?r - receptacle)\n    (microwaveReceptacle ?r - receptacle)\n    (sinkbasinReceptacle ?r - receptacle)\n    (sharpObject ?o - object)\n  )\n  \n  (:action GotoLocation\n    :parameters (?from - receptacle ?to - receptacle)\n    :precondition (and (at ?from) (not (at ?to)))\n    :effect (and (not (at ?from)) (at ?to))\n  )\n\n  (:action OpenObject\n    :parameters (?r - receptacle)\n    :precondition (and (at ?r) (closed ?r))\n    :effect (and (not (closed ?r)) (opened ?r))\n  )\n\n  (:action CloseObject\n    :parameters (?r - receptacle)\n    :precondition (and (at ?r) (opened ?r))\n    :effect (and (not (opened ?r)) (closed ?r))\n  )\n\n  (:action PickupObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (at ?o ?r) (not (holding ?o)))\n    :effect (and (not (at ?o ?r)) (holding ?o))\n  )\n\n  (:action PutObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (holding ?o) (not (at ?o ?r)))\n    :effect (and (not (holding ?o)) (at ?o ?r))\n  )\n\n  (:action useObject\n    :parameters (?o - object)\n    :precondition (and (holding ?o))\n    :effect (used ?o)\n  )\n\n  (:action HeatObject\n    :parameters (?o - object ?r - microwaveReceptacle)\n    :precondition (and (at ?r) (holding ?o))\n    :effect (heated ?o)\n  )\n\n  (:action CleanObject\n    :parameters (?o - object ?r - sinkbasinReceptacle)\n    :precondition (and (at ?r) (holding ?o))\n    :effect (cleaned ?o)\n  )\n\n  (:action CoolObject\n    :parameters (?o - object ?r - fridgeReceptacle)\n    :precondition (and (at ?r) (holding ?o))\n    :effect (cooled ?o)\n  )\n\n  (:action SliceObject\n    :parameters (?r - receptacle ?co - object ?sharp_o - sharpObject)\n    :precondition (and (at ?r) (holding ?sharp_o) (at ?co ?r))\n    :effect (sliced ?co)\n  )\n)\n",
+  "pf": "(define (problem saltshaker-in-drawer)\n  (:domain saltshaker-in-drawer)\n  (:objects \n    cabinet1 - receptacle\n    cabinet2 - receptacle\n    cabinet3 - receptacle\n    cabinet4 - receptacle\n    cabinet5 - receptacle\n    cabinet6 - receptacle\n    coffeemachine1 - receptacle\n    countertop1 - receptacle\n    countertop2 - receptacle\n    countertop3 - receptacle\n    drawer1 - receptacle\n    drawer2 - receptacle\n    drawer3 - receptacle\n    fridge1 - receptacle\n    garbagecan1 - receptacle\n    microwave1 - receptacle\n    shelf1 - receptacle\n    shelf2 - receptacle\n    shelf3 - receptacle\n    sinkbasin1 - receptacle\n    stoveburner1 - receptacle\n    stoveburner2 - receptacle\n    stoveburner3 - receptacle\n    stoveburner4 - receptacle\n    toaster1 - receptacle\n    saltshaker - object\n  )\n  \n  (:init\n    (at init_receptacle)\n    (closed cabinet1)\n    (closed cabinet2)\n    (closed cabinet3)\n    (closed cabinet4)\n    (closed cabinet5)\n    (closed cabinet6)\n    (closed drawer1)\n    (closed drawer2)\n    (closed drawer3)\n    (closed fridge1)\n    (closed microwave1)\n    (closed sinkbasin1)\n    (closed stoveburner1)\n    (closed stoveburner2)\n    (closed stoveburner3)\n    (closed stoveburner4)\n    (closed toaster1)\n    (drawer drawer1)\n    (drawer drawer2)\n    (drawer drawer3)\n    (fridgeReceptacle fridge1)\n    (microwaveReceptacle microwave1)\n    (sinkbasinReceptacle sinkbasin1)\n  )\n  \n  (:goal (exists (?d - drawer) (at saltshaker ?d)))\n)\n"
+}
+=== END RESPONSE ===
+Generated df and pf:
+(define (domain saltshaker-in-drawer) 
+  (:requirements :strips :typing :negative-preconditions)
+  (:types receptacle object)
+  (:predicates 
+    (at ?x - receptacle)
+    (opened ?r - receptacle)
+    (holding ?o - object)
+    (at ?o - object ?r - receptacle)
+    (closed ?r - receptacle)
+    (drawer ?r - receptacle)
+    (fridgeReceptacle ?r - receptacle)
+    (microwaveReceptacle ?r - receptacle)
+    (sinkbasinReceptacle ?r - receptacle)
+    (sharpObject ?o - object)
+  )
+  
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (and (at ?from) (not (at ?to)))
+    :effect (and (not (at ?from)) (at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (and (at ?r) (closed ?r))
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (and (at ?r) (opened ?r))
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (at ?o ?r) (not (holding ?o)))
+    :effect (and (not (at ?o ?r)) (holding ?o))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (holding ?o) (not (at ?o ?r)))
+    :effect (and (not (holding ?o)) (at ?o ?r))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (and (holding ?o))
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - microwaveReceptacle)
+    :precondition (and (at ?r) (holding ?o))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - sinkbasinReceptacle)
+    :precondition (and (at ?r) (holding ?o))
+    :effect (cleaned ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - fridgeReceptacle)
+    :precondition (and (at ?r) (holding ?o))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - sharpObject)
+    :precondition (and (at ?r) (holding ?sharp_o) (at ?co ?r))
+    :effect (sliced ?co)
+  )
+)
+
+(define (problem saltshaker-in-drawer)
+  (:domain saltshaker-in-drawer)
+  (:objects 
+    cabinet1 - receptacle
+    cabinet2 - receptacle
+    cabinet3 - receptacle
+    cabinet4 - receptacle
+    cabinet5 - receptacle
+    cabinet6 - receptacle
+    coffeemachine1 - receptacle
+    countertop1 - receptacle
+    countertop2 - receptacle
+    countertop3 - receptacle
+    drawer1 - receptacle
+    drawer2 - receptacle
+    drawer3 - receptacle
+    fridge1 - receptacle
+    garbagecan1 - receptacle
+    microwave1 - receptacle
+    shelf1 - receptacle
+    shelf2 - receptacle
+    shelf3 - receptacle
+    sinkbasin1 - receptacle
+    stoveburner1 - receptacle
+    stoveburner2 - receptacle
+    stoveburner3 - receptacle
+    stoveburner4 - receptacle
+    toaster1 - receptacle
+    saltshaker - object
+  )
+  
+  (:init
+    (at init_receptacle)
+    (closed cabinet1)
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (closed cabinet5)
+    (closed cabinet6)
+    (closed drawer1)
+    (closed drawer2)
+    (closed drawer3)
+    (closed fridge1)
+    (closed microwave1)
+    (closed sinkbasin1)
+    (closed stoveburner1)
+    (closed stoveburner2)
+    (closed stoveburner3)
+    (closed stoveburner4)
+    (closed toaster1)
+    (drawer drawer1)
+    (drawer drawer2)
+    (drawer drawer3)
+    (fridgeReceptacle fridge1)
+    (microwaveReceptacle microwave1)
+    (sinkbasinReceptacle sinkbasin1)
+  )
+  
+  (:goal (exists (?d - drawer) (at saltshaker ?d)))
+)
+
+Actions: None
+--Small Loop--: 1
+=== PROMPT SENT TO LLM ===
+Please provide the output in strict JSON format, without any additional text or explanation, including a PDDL domain file as 'df' and a PDDL problem file as 'pf'. 
+The format should strictly be:
+    {{
+    "df": "...",
+    "pf": "..."
+    }}
+
+
+        You are in an environment that you must explore step by step. Your task is to build and update PDDL files for the environment using only your direct observations. Do not create or assume any objects, relationships, or details that have not been observed, and ensure you include all observations.
+
+        The environment is a room containing various objects. Some of these objects are on, in, or contained within other objects and receptacles. You will initially be located as init_receptacle. You can assume all receptacles are freely reachable.
+        
+        Now, Your task is to: put a saltshaker in drawer.
+        Here are your current observations: Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+        Only the following actions are allowed: (There are only two types: object and receptacle)
+        1. go to a receptacle
+            :action GotoLocation
+            :parameters (?from - receptacle ?to - receptacle)
+        2. open a receptacle if it is closed
+            :action OpenObject
+            :parameters (?r - receptacle)
+        3. close a receptacle
+            :action CloseObject
+            :parameters (?r - receptacle)
+        4. take an object from another receptacle
+            :action PickupObject
+            :parameters (?o - object ?r - receptacle)
+        5. put object into/on/in another receptacle
+            :action PutObject
+            :parameters (?o - object ?r - receptacle)
+        6. using an object/receptacle by turning it on/off with a switch
+            :action useObject
+            :parameters (?o - object)
+        7. heat an object using a receptacle
+            :action HeatObject
+            :parameters (?o - object ?r - microwaveReceptacle)
+        8. clean an object using a receptacle
+            :action CleanObject
+            :parameters (?o - object ?r - sinkbasinReceptacle)
+        9. cool an object using a receptacle
+            :action CoolObject
+            :parameters (?o - object ?r - fridgeReceptacle)
+        10. slice an object using a sharp object
+            :action SliceObject
+            :parameters (?r - receptacle ?co - object ?sharp_o - sharpObject)
+
+        You must go to a receptacle first in order to use/open it or take/put objects from/on it.
+
+        The process involves two main stages:
+
+        1. Always searching for the aim Object first!!!
+            In this stage, your goal is to go to and may need to open new, unvisited recepatacles until you find the object mentioned in the task. Some receptacles cannot be opened so you can directly see what objects after you go to that receptacle.
+
+            You can only use the GotoLocation action to travel to a new location and the OpenObject action (if the receptacle is closed) to verify whether it contains the target object.
+
+            Goal 1.1: Reach a location that has not been visited (the location should be a receptacle) using the GotoLocation action. 
+                You goal should look like this:
+                (:goal 
+                    (at ?recepatacle)
+                ) where recepatacle should be somewhere or some recepatacles not visited.
+
+            Goal 1.2: If you already go to the recepatacle and found the recepatacle is closed, use the OpenObject action to open it and inspect the contents. 
+                Your goal should look like this:
+                (:goal 
+                    (opened ?recepatacle)
+                ) where recepatacle should be the recepatacle you want to open.
+
+        2. After you seeing the aim object in any receptacle, using the Object to Complete the Task:
+            After you have located the object (the object may have some numbers added), you should always first pick up the object from that receptacle and update your goal to focus on how the object is used to complete the task. Remember your goal is Your task is to: put a saltshaker in drawer.. Based on different adjectives, you may need to perform different actions for the object in different ways.
+
+            This may involve more than simply transferring it from one place to another.
+            For example: You might examine the object or a nearby receptacle to gather information. You may need to use another tool or device (like a lamp or a switch). Some tasks require you to slice, heat, cool, or clean the object using an appropriate receptacle (e.g., microwave, sink, fridge).
+
+            If necessary, use the PickupObject action to retrieve the item, and the GotoLocation action to move to the correct place.
+            Then, apply the object in a purposeful way — not just move it — but interact with the environment to fulfill the task’s actual goal.
+
+            Hint: 
+            1. If you want to heat, clean, and cool an object, after you go to that aim receptacle, do not put the object in the receptacle but do the action directly. For example, go to fridge, then cool the object with receptacle.
+            2. If you want to slice an object, you should first go to the receptacle where both the sharp object and the aim object are located and ONLY pick up the sharp object then do the slice action. Don't forget to put the sharp object back to the receptacle after you finish slicing.
+            3. If you want to examine or look at an object with a lamp, you should first go to the receptacle where the object is located and then pick it up and take the USE action of the lamp. You don't need to take the lamp but directly use it.
+            4. If there are multiple actions needed to complete the task, you can break them down into smaller subgoals. For example, if you need to slice and then heat an object, first focus on slicing it, and then move on to heating it.
+
+        In summary, the first stage is all about finding the object—this might involve going to an unvisited receptacle and opening it if necessary.
+        
+        Note: 
+        1. some receptacles have numbers in their names. Always keep them as they are. For example, "towelholder1" should not be changed to "towelholder".
+        2. Your initial goal should always be to go to a new location instead of put something into somewhere.
+        3. Do not enter stage 2 when not finishing stage 1.
+
+        Note: Always include :negative-preconditions in your :requirements whenever you use (not …) or delete effects, and never leave an :precondition or :effect block empty—either omit it or include at least one literal.
+    
+
+
+This is all the memory you have in this game including each action and its corresponding observations: 
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+You have already generated df and pf files according to the observations.
+This is previous domain file: 
+(define (domain saltshaker-in-drawer) 
+  (:requirements :strips :typing :negative-preconditions)
+  (:types receptacle object)
+  (:predicates 
+    (at ?x - receptacle)
+    (opened ?r - receptacle)
+    (holding ?o - object)
+    (at ?o - object ?r - receptacle)
+    (closed ?r - receptacle)
+    (drawer ?r - receptacle)
+    (fridgeReceptacle ?r - receptacle)
+    (microwaveReceptacle ?r - receptacle)
+    (sinkbasinReceptacle ?r - receptacle)
+    (sharpObject ?o - object)
+  )
+  
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (and (at ?from) (not (at ?to)))
+    :effect (and (not (at ?from)) (at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (and (at ?r) (closed ?r))
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (and (at ?r) (opened ?r))
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (at ?o ?r) (not (holding ?o)))
+    :effect (and (not (at ?o ?r)) (holding ?o))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (holding ?o) (not (at ?o ?r)))
+    :effect (and (not (holding ?o)) (at ?o ?r))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (and (holding ?o))
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - microwaveReceptacle)
+    :precondition (and (at ?r) (holding ?o))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - sinkbasinReceptacle)
+    :precondition (and (at ?r) (holding ?o))
+    :effect (cleaned ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - fridgeReceptacle)
+    :precondition (and (at ?r) (holding ?o))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - sharpObject)
+    :precondition (and (at ?r) (holding ?sharp_o) (at ?co ?r))
+    :effect (sliced ?co)
+  )
+)
+
+
+This is previous problem file: 
+(define (problem saltshaker-in-drawer)
+  (:domain saltshaker-in-drawer)
+  (:objects 
+    cabinet1 - receptacle
+    cabinet2 - receptacle
+    cabinet3 - receptacle
+    cabinet4 - receptacle
+    cabinet5 - receptacle
+    cabinet6 - receptacle
+    coffeemachine1 - receptacle
+    countertop1 - receptacle
+    countertop2 - receptacle
+    countertop3 - receptacle
+    drawer1 - receptacle
+    drawer2 - receptacle
+    drawer3 - receptacle
+    fridge1 - receptacle
+    garbagecan1 - receptacle
+    microwave1 - receptacle
+    shelf1 - receptacle
+    shelf2 - receptacle
+    shelf3 - receptacle
+    sinkbasin1 - receptacle
+    stoveburner1 - receptacle
+    stoveburner2 - receptacle
+    stoveburner3 - receptacle
+    stoveburner4 - receptacle
+    toaster1 - receptacle
+    saltshaker - object
+  )
+  
+  (:init
+    (at init_receptacle)
+    (closed cabinet1)
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (closed cabinet5)
+    (closed cabinet6)
+    (closed drawer1)
+    (closed drawer2)
+    (closed drawer3)
+    (closed fridge1)
+    (closed microwave1)
+    (closed sinkbasin1)
+    (closed stoveburner1)
+    (closed stoveburner2)
+    (closed stoveburner3)
+    (closed stoveburner4)
+    (closed toaster1)
+    (drawer drawer1)
+    (drawer drawer2)
+    (drawer drawer3)
+    (fridgeReceptacle fridge1)
+    (microwaveReceptacle microwave1)
+    (sinkbasinReceptacle sinkbasin1)
+  )
+  
+  (:goal (exists (?d - drawer) (at saltshaker ?d)))
+)
+
+
+
+
+
+You made some mistakes when generating those files. Here is the error message: 
+predicate AT declared twice!
+
+
+
+Now rewrite both the domain and problem files with the minimal fix.
+
+=== END PROMPT ===
+=== RAW LLM RESPONSE ===
+{
+  "df": "(define (domain saltshaker-in-drawer) \n  (:requirements :strips :typing :negative-preconditions)\n  (:types receptacle object)\n  (:predicates \n    (agent-at ?x - receptacle)\n    (opened ?r - receptacle)\n    (holding ?o - object)\n    (object-at ?o - object ?r - receptacle)\n    (closed ?r - receptacle)\n    (drawer ?r - receptacle)\n    (fridgeReceptacle ?r - receptacle)\n    (microwaveReceptacle ?r - receptacle)\n    (sinkbasinReceptacle ?r - receptacle)\n    (sharpObject ?o - object)\n  )\n  \n  (:action GotoLocation\n    :parameters (?from - receptacle ?to - receptacle)\n    :precondition (and (agent-at ?from) (not (agent-at ?to)))\n    :effect (and (not (agent-at ?from)) (agent-at ?to))\n  )\n\n  (:action OpenObject\n    :parameters (?r - receptacle)\n    :precondition (and (agent-at ?r) (closed ?r))\n    :effect (and (not (closed ?r)) (opened ?r))\n  )\n\n  (:action CloseObject\n    :parameters (?r - receptacle)\n    :precondition (and (agent-at ?r) (opened ?r))\n    :effect (and (not (opened ?r)) (closed ?r))\n  )\n\n  (:action PickupObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (object-at ?o ?r) (not (holding ?o)))\n    :effect (and (not (object-at ?o ?r)) (holding ?o))\n  )\n\n  (:action PutObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (holding ?o) (not (object-at ?o ?r)))\n    :effect (and (not (holding ?o)) (object-at ?o ?r))\n  )\n\n  (:action useObject\n    :parameters (?o - object)\n    :precondition (and (holding ?o))\n    :effect (used ?o)\n  )\n\n  (:action HeatObject\n    :parameters (?o - object ?r - microwaveReceptacle)\n    :precondition (and (agent-at ?r) (holding ?o))\n    :effect (heated ?o)\n  )\n\n  (:action CleanObject\n    :parameters (?o - object ?r - sinkbasinReceptacle)\n    :precondition (and (agent-at ?r) (holding ?o))\n    :effect (cleaned ?o)\n  )\n\n  (:action CoolObject\n    :parameters (?o - object ?r - fridgeReceptacle)\n    :precondition (and (agent-at ?r) (holding ?o))\n    :effect (cooled ?o)\n  )\n\n  (:action SliceObject\n    :parameters (?r - receptacle ?co - object ?sharp_o - sharpObject)\n    :precondition (and (agent-at ?r) (holding ?sharp_o) (object-at ?co ?r))\n    :effect (sliced ?co)\n  )\n)\n",
+  "pf": "(define (problem saltshaker-in-drawer)\n  (:domain saltshaker-in-drawer)\n  (:objects \n    cabinet1 - receptacle\n    cabinet2 - receptacle\n    cabinet3 - receptacle\n    cabinet4 - receptacle\n    cabinet5 - receptacle\n    cabinet6 - receptacle\n    coffeemachine1 - receptacle\n    countertop1 - receptacle\n    countertop2 - receptacle\n    countertop3 - receptacle\n    drawer1 - receptacle\n    drawer2 - receptacle\n    drawer3 - receptacle\n    fridge1 - receptacle\n    garbagecan1 - receptacle\n    microwave1 - receptacle\n    shelf1 - receptacle\n    shelf2 - receptacle\n    shelf3 - receptacle\n    sinkbasin1 - receptacle\n    stoveburner1 - receptacle\n    stoveburner2 - receptacle\n    stoveburner3 - receptacle\n    stoveburner4 - receptacle\n    toaster1 - receptacle\n    saltshaker - object\n  )\n  \n  (:init\n    (agent-at init_receptacle)\n    (closed cabinet1)\n    (closed cabinet2)\n    (closed cabinet3)\n    (closed cabinet4)\n    (closed cabinet5)\n    (closed cabinet6)\n    (closed drawer1)\n    (closed drawer2)\n    (closed drawer3)\n    (closed fridge1)\n    (closed microwave1)\n    (closed sinkbasin1)\n    (closed stoveburner1)\n    (closed stoveburner2)\n    (closed stoveburner3)\n    (closed stoveburner4)\n    (closed toaster1)\n    (drawer drawer1)\n    (drawer drawer2)\n    (drawer drawer3)\n    (fridgeReceptacle fridge1)\n    (microwaveReceptacle microwave1)\n    (sinkbasinReceptacle sinkbasin1)\n  )\n  \n  (:goal (exists (?d - drawer) (object-at saltshaker ?d)))\n)\n"
+}
+=== END RESPONSE ===
+Generated df and pf:
+(define (domain saltshaker-in-drawer) 
+  (:requirements :strips :typing :negative-preconditions)
+  (:types receptacle object)
+  (:predicates 
+    (agent-at ?x - receptacle)
+    (opened ?r - receptacle)
+    (holding ?o - object)
+    (object-at ?o - object ?r - receptacle)
+    (closed ?r - receptacle)
+    (drawer ?r - receptacle)
+    (fridgeReceptacle ?r - receptacle)
+    (microwaveReceptacle ?r - receptacle)
+    (sinkbasinReceptacle ?r - receptacle)
+    (sharpObject ?o - object)
+  )
+  
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (and (agent-at ?from) (not (agent-at ?to)))
+    :effect (and (not (agent-at ?from)) (agent-at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (closed ?r))
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (opened ?r))
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (object-at ?o ?r) (not (holding ?o)))
+    :effect (and (not (object-at ?o ?r)) (holding ?o))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (not (object-at ?o ?r)))
+    :effect (and (not (holding ?o)) (object-at ?o ?r))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (and (holding ?o))
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - microwaveReceptacle)
+    :precondition (and (agent-at ?r) (holding ?o))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - sinkbasinReceptacle)
+    :precondition (and (agent-at ?r) (holding ?o))
+    :effect (cleaned ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - fridgeReceptacle)
+    :precondition (and (agent-at ?r) (holding ?o))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - sharpObject)
+    :precondition (and (agent-at ?r) (holding ?sharp_o) (object-at ?co ?r))
+    :effect (sliced ?co)
+  )
+)
+
+(define (problem saltshaker-in-drawer)
+  (:domain saltshaker-in-drawer)
+  (:objects 
+    cabinet1 - receptacle
+    cabinet2 - receptacle
+    cabinet3 - receptacle
+    cabinet4 - receptacle
+    cabinet5 - receptacle
+    cabinet6 - receptacle
+    coffeemachine1 - receptacle
+    countertop1 - receptacle
+    countertop2 - receptacle
+    countertop3 - receptacle
+    drawer1 - receptacle
+    drawer2 - receptacle
+    drawer3 - receptacle
+    fridge1 - receptacle
+    garbagecan1 - receptacle
+    microwave1 - receptacle
+    shelf1 - receptacle
+    shelf2 - receptacle
+    shelf3 - receptacle
+    sinkbasin1 - receptacle
+    stoveburner1 - receptacle
+    stoveburner2 - receptacle
+    stoveburner3 - receptacle
+    stoveburner4 - receptacle
+    toaster1 - receptacle
+    saltshaker - object
+  )
+  
+  (:init
+    (agent-at init_receptacle)
+    (closed cabinet1)
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (closed cabinet5)
+    (closed cabinet6)
+    (closed drawer1)
+    (closed drawer2)
+    (closed drawer3)
+    (closed fridge1)
+    (closed microwave1)
+    (closed sinkbasin1)
+    (closed stoveburner1)
+    (closed stoveburner2)
+    (closed stoveburner3)
+    (closed stoveburner4)
+    (closed toaster1)
+    (drawer drawer1)
+    (drawer drawer2)
+    (drawer drawer3)
+    (fridgeReceptacle fridge1)
+    (microwaveReceptacle microwave1)
+    (sinkbasinReceptacle sinkbasin1)
+  )
+  
+  (:goal (exists (?d - drawer) (object-at saltshaker ?d)))
+)
+
+Actions: None
+Solver stderr: unknown constant INIT_RECEPTACLE in literal AGENT-AT. check input files
+Plan text:
+
+--Small Loop--: 2
+=== PROMPT SENT TO LLM ===
+Please provide the output in strict JSON format, without any additional text or explanation, including a PDDL domain file as 'df' and a PDDL problem file as 'pf'. 
+The format should strictly be:
+    {{
+    "df": "...",
+    "pf": "..."
+    }}
+
+
+        You are in an environment that you must explore step by step. Your task is to build and update PDDL files for the environment using only your direct observations. Do not create or assume any objects, relationships, or details that have not been observed, and ensure you include all observations.
+
+        The environment is a room containing various objects. Some of these objects are on, in, or contained within other objects and receptacles. You will initially be located as init_receptacle. You can assume all receptacles are freely reachable.
+        
+        Now, Your task is to: put a saltshaker in drawer.
+        Here are your current observations: Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+        Only the following actions are allowed: (There are only two types: object and receptacle)
+        1. go to a receptacle
+            :action GotoLocation
+            :parameters (?from - receptacle ?to - receptacle)
+        2. open a receptacle if it is closed
+            :action OpenObject
+            :parameters (?r - receptacle)
+        3. close a receptacle
+            :action CloseObject
+            :parameters (?r - receptacle)
+        4. take an object from another receptacle
+            :action PickupObject
+            :parameters (?o - object ?r - receptacle)
+        5. put object into/on/in another receptacle
+            :action PutObject
+            :parameters (?o - object ?r - receptacle)
+        6. using an object/receptacle by turning it on/off with a switch
+            :action useObject
+            :parameters (?o - object)
+        7. heat an object using a receptacle
+            :action HeatObject
+            :parameters (?o - object ?r - microwaveReceptacle)
+        8. clean an object using a receptacle
+            :action CleanObject
+            :parameters (?o - object ?r - sinkbasinReceptacle)
+        9. cool an object using a receptacle
+            :action CoolObject
+            :parameters (?o - object ?r - fridgeReceptacle)
+        10. slice an object using a sharp object
+            :action SliceObject
+            :parameters (?r - receptacle ?co - object ?sharp_o - sharpObject)
+
+        You must go to a receptacle first in order to use/open it or take/put objects from/on it.
+
+        The process involves two main stages:
+
+        1. Always searching for the aim Object first!!!
+            In this stage, your goal is to go to and may need to open new, unvisited recepatacles until you find the object mentioned in the task. Some receptacles cannot be opened so you can directly see what objects after you go to that receptacle.
+
+            You can only use the GotoLocation action to travel to a new location and the OpenObject action (if the receptacle is closed) to verify whether it contains the target object.
+
+            Goal 1.1: Reach a location that has not been visited (the location should be a receptacle) using the GotoLocation action. 
+                You goal should look like this:
+                (:goal 
+                    (at ?recepatacle)
+                ) where recepatacle should be somewhere or some recepatacles not visited.
+
+            Goal 1.2: If you already go to the recepatacle and found the recepatacle is closed, use the OpenObject action to open it and inspect the contents. 
+                Your goal should look like this:
+                (:goal 
+                    (opened ?recepatacle)
+                ) where recepatacle should be the recepatacle you want to open.
+
+        2. After you seeing the aim object in any receptacle, using the Object to Complete the Task:
+            After you have located the object (the object may have some numbers added), you should always first pick up the object from that receptacle and update your goal to focus on how the object is used to complete the task. Remember your goal is Your task is to: put a saltshaker in drawer.. Based on different adjectives, you may need to perform different actions for the object in different ways.
+
+            This may involve more than simply transferring it from one place to another.
+            For example: You might examine the object or a nearby receptacle to gather information. You may need to use another tool or device (like a lamp or a switch). Some tasks require you to slice, heat, cool, or clean the object using an appropriate receptacle (e.g., microwave, sink, fridge).
+
+            If necessary, use the PickupObject action to retrieve the item, and the GotoLocation action to move to the correct place.
+            Then, apply the object in a purposeful way — not just move it — but interact with the environment to fulfill the task’s actual goal.
+
+            Hint: 
+            1. If you want to heat, clean, and cool an object, after you go to that aim receptacle, do not put the object in the receptacle but do the action directly. For example, go to fridge, then cool the object with receptacle.
+            2. If you want to slice an object, you should first go to the receptacle where both the sharp object and the aim object are located and ONLY pick up the sharp object then do the slice action. Don't forget to put the sharp object back to the receptacle after you finish slicing.
+            3. If you want to examine or look at an object with a lamp, you should first go to the receptacle where the object is located and then pick it up and take the USE action of the lamp. You don't need to take the lamp but directly use it.
+            4. If there are multiple actions needed to complete the task, you can break them down into smaller subgoals. For example, if you need to slice and then heat an object, first focus on slicing it, and then move on to heating it.
+
+        In summary, the first stage is all about finding the object—this might involve going to an unvisited receptacle and opening it if necessary.
+        
+        Note: 
+        1. some receptacles have numbers in their names. Always keep them as they are. For example, "towelholder1" should not be changed to "towelholder".
+        2. Your initial goal should always be to go to a new location instead of put something into somewhere.
+        3. Do not enter stage 2 when not finishing stage 1.
+
+        Note: Always include :negative-preconditions in your :requirements whenever you use (not …) or delete effects, and never leave an :precondition or :effect block empty—either omit it or include at least one literal.
+    
+
+
+This is all the memory you have in this game including each action and its corresponding observations: 
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+You have already generated df and pf files according to the observations.
+This is previous domain file: 
+(define (domain saltshaker-in-drawer) 
+  (:requirements :strips :typing :negative-preconditions)
+  (:types receptacle object)
+  (:predicates 
+    (agent-at ?x - receptacle)
+    (opened ?r - receptacle)
+    (holding ?o - object)
+    (object-at ?o - object ?r - receptacle)
+    (closed ?r - receptacle)
+    (drawer ?r - receptacle)
+    (fridgeReceptacle ?r - receptacle)
+    (microwaveReceptacle ?r - receptacle)
+    (sinkbasinReceptacle ?r - receptacle)
+    (sharpObject ?o - object)
+  )
+  
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (and (agent-at ?from) (not (agent-at ?to)))
+    :effect (and (not (agent-at ?from)) (agent-at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (closed ?r))
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (opened ?r))
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (object-at ?o ?r) (not (holding ?o)))
+    :effect (and (not (object-at ?o ?r)) (holding ?o))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (not (object-at ?o ?r)))
+    :effect (and (not (holding ?o)) (object-at ?o ?r))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (and (holding ?o))
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - microwaveReceptacle)
+    :precondition (and (agent-at ?r) (holding ?o))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - sinkbasinReceptacle)
+    :precondition (and (agent-at ?r) (holding ?o))
+    :effect (cleaned ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - fridgeReceptacle)
+    :precondition (and (agent-at ?r) (holding ?o))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - sharpObject)
+    :precondition (and (agent-at ?r) (holding ?sharp_o) (object-at ?co ?r))
+    :effect (sliced ?co)
+  )
+)
+
+
+This is previous problem file: 
+(define (problem saltshaker-in-drawer)
+  (:domain saltshaker-in-drawer)
+  (:objects 
+    cabinet1 - receptacle
+    cabinet2 - receptacle
+    cabinet3 - receptacle
+    cabinet4 - receptacle
+    cabinet5 - receptacle
+    cabinet6 - receptacle
+    coffeemachine1 - receptacle
+    countertop1 - receptacle
+    countertop2 - receptacle
+    countertop3 - receptacle
+    drawer1 - receptacle
+    drawer2 - receptacle
+    drawer3 - receptacle
+    fridge1 - receptacle
+    garbagecan1 - receptacle
+    microwave1 - receptacle
+    shelf1 - receptacle
+    shelf2 - receptacle
+    shelf3 - receptacle
+    sinkbasin1 - receptacle
+    stoveburner1 - receptacle
+    stoveburner2 - receptacle
+    stoveburner3 - receptacle
+    stoveburner4 - receptacle
+    toaster1 - receptacle
+    saltshaker - object
+  )
+  
+  (:init
+    (agent-at init_receptacle)
+    (closed cabinet1)
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (closed cabinet5)
+    (closed cabinet6)
+    (closed drawer1)
+    (closed drawer2)
+    (closed drawer3)
+    (closed fridge1)
+    (closed microwave1)
+    (closed sinkbasin1)
+    (closed stoveburner1)
+    (closed stoveburner2)
+    (closed stoveburner3)
+    (closed stoveburner4)
+    (closed toaster1)
+    (drawer drawer1)
+    (drawer drawer2)
+    (drawer drawer3)
+    (fridgeReceptacle fridge1)
+    (microwaveReceptacle microwave1)
+    (sinkbasinReceptacle sinkbasin1)
+  )
+  
+  (:goal (exists (?d - drawer) (object-at saltshaker ?d)))
+)
+
+
+
+
+
+You made some mistakes when generating those files. Here is the error message: 
+unknown constant INIT_RECEPTACLE in literal AGENT-AT. check input files
+
+
+
+Now rewrite both the domain and problem files with the minimal fix.
+
+=== END PROMPT ===
+=== RAW LLM RESPONSE ===
+{
+  "df": "(define (domain saltshaker-in-drawer) \n  (:requirements :strips :typing :negative-preconditions)\n  (:types receptacle object)\n  (:predicates \n    (agent-at ?x - receptacle)\n    (opened ?r - receptacle)\n    (holding ?o - object)\n    (object-at ?o - object ?r - receptacle)\n    (closed ?r - receptacle)\n    (drawer ?r - receptacle)\n    (fridgeReceptacle ?r - receptacle)\n    (microwaveReceptacle ?r - receptacle)\n    (sinkbasinReceptacle ?r - receptacle)\n    (sharpObject ?o - object)\n  )\n  \n  (:action GotoLocation\n    :parameters (?from - receptacle ?to - receptacle)\n    :precondition (and (agent-at ?from) (not (agent-at ?to)))\n    :effect (and (not (agent-at ?from)) (agent-at ?to))\n  )\n\n  (:action OpenObject\n    :parameters (?r - receptacle)\n    :precondition (and (agent-at ?r) (closed ?r))\n    :effect (and (not (closed ?r)) (opened ?r))\n  )\n\n  (:action CloseObject\n    :parameters (?r - receptacle)\n    :precondition (and (agent-at ?r) (opened ?r))\n    :effect (and (not (opened ?r)) (closed ?r))\n  )\n\n  (:action PickupObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (object-at ?o ?r) (not (holding ?o)))\n    :effect (and (not (object-at ?o ?r)) (holding ?o))\n  )\n\n  (:action PutObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (holding ?o) (not (object-at ?o ?r)))\n    :effect (and (not (holding ?o)) (object-at ?o ?r))\n  )\n\n  (:action useObject\n    :parameters (?o - object)\n    :precondition (and (holding ?o))\n    :effect (used ?o)\n  )\n\n  (:action HeatObject\n    :parameters (?o - object ?r - microwaveReceptacle)\n    :precondition (and (agent-at ?r) (holding ?o))\n    :effect (heated ?o)\n  )\n\n  (:action CleanObject\n    :parameters (?o - object ?r - sinkbasinReceptacle)\n    :precondition (and (agent-at ?r) (holding ?o))\n    :effect (cleaned ?o)\n  )\n\n  (:action CoolObject\n    :parameters (?o - object ?r - fridgeReceptacle)\n    :precondition (and (agent-at ?r) (holding ?o))\n    :effect (cooled ?o)\n  )\n\n  (:action SliceObject\n    :parameters (?r - receptacle ?co - object ?sharp_o - sharpObject)\n    :precondition (and (agent-at ?r) (holding ?sharp_o) (object-at ?co ?r))\n    :effect (sliced ?co)\n  )\n)",
+  "pf": "(define (problem saltshaker-in-drawer)\n  (:domain saltshaker-in-drawer)\n  (:objects \n    cabinet1 - receptacle\n    cabinet2 - receptacle\n    cabinet3 - receptacle\n    cabinet4 - receptacle\n    cabinet5 - receptacle\n    cabinet6 - receptacle\n    coffeemachine1 - receptacle\n    countertop1 - receptacle\n    countertop2 - receptacle\n    countertop3 - receptacle\n    drawer1 - receptacle\n    drawer2 - receptacle\n    drawer3 - receptacle\n    fridge1 - receptacle\n    garbagecan1 - receptacle\n    microwave1 - receptacle\n    shelf1 - receptacle\n    shelf2 - receptacle\n    shelf3 - receptacle\n    sinkbasin1 - receptacle\n    stoveburner1 - receptacle\n    stoveburner2 - receptacle\n    stoveburner3 - receptacle\n    stoveburner4 - receptacle\n    toaster1 - receptacle\n    init_receptacle - receptacle\n    saltshaker - object\n  )\n  \n  (:init\n    (agent-at init_receptacle)\n    (closed cabinet1)\n    (closed cabinet2)\n    (closed cabinet3)\n    (closed cabinet4)\n    (closed cabinet5)\n    (closed cabinet6)\n    (closed drawer1)\n    (closed drawer2)\n    (closed drawer3)\n    (closed fridge1)\n    (closed microwave1)\n    (closed sinkbasin1)\n    (closed stoveburner1)\n    (closed stoveburner2)\n    (closed stoveburner3)\n    (closed stoveburner4)\n    (closed toaster1)\n    (drawer drawer1)\n    (drawer drawer2)\n    (drawer drawer3)\n    (fridgeReceptacle fridge1)\n    (microwaveReceptacle microwave1)\n    (sinkbasinReceptacle sinkbasin1)\n  )\n  \n  (:goal (exists (?d - drawer) (object-at saltshaker ?d)))\n)"
+}
+=== END RESPONSE ===
+Generated df and pf:
+(define (domain saltshaker-in-drawer) 
+  (:requirements :strips :typing :negative-preconditions)
+  (:types receptacle object)
+  (:predicates 
+    (agent-at ?x - receptacle)
+    (opened ?r - receptacle)
+    (holding ?o - object)
+    (object-at ?o - object ?r - receptacle)
+    (closed ?r - receptacle)
+    (drawer ?r - receptacle)
+    (fridgeReceptacle ?r - receptacle)
+    (microwaveReceptacle ?r - receptacle)
+    (sinkbasinReceptacle ?r - receptacle)
+    (sharpObject ?o - object)
+  )
+  
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (and (agent-at ?from) (not (agent-at ?to)))
+    :effect (and (not (agent-at ?from)) (agent-at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (closed ?r))
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (opened ?r))
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (object-at ?o ?r) (not (holding ?o)))
+    :effect (and (not (object-at ?o ?r)) (holding ?o))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (not (object-at ?o ?r)))
+    :effect (and (not (holding ?o)) (object-at ?o ?r))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (and (holding ?o))
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - microwaveReceptacle)
+    :precondition (and (agent-at ?r) (holding ?o))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - sinkbasinReceptacle)
+    :precondition (and (agent-at ?r) (holding ?o))
+    :effect (cleaned ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - fridgeReceptacle)
+    :precondition (and (agent-at ?r) (holding ?o))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - sharpObject)
+    :precondition (and (agent-at ?r) (holding ?sharp_o) (object-at ?co ?r))
+    :effect (sliced ?co)
+  )
+)
+(define (problem saltshaker-in-drawer)
+  (:domain saltshaker-in-drawer)
+  (:objects 
+    cabinet1 - receptacle
+    cabinet2 - receptacle
+    cabinet3 - receptacle
+    cabinet4 - receptacle
+    cabinet5 - receptacle
+    cabinet6 - receptacle
+    coffeemachine1 - receptacle
+    countertop1 - receptacle
+    countertop2 - receptacle
+    countertop3 - receptacle
+    drawer1 - receptacle
+    drawer2 - receptacle
+    drawer3 - receptacle
+    fridge1 - receptacle
+    garbagecan1 - receptacle
+    microwave1 - receptacle
+    shelf1 - receptacle
+    shelf2 - receptacle
+    shelf3 - receptacle
+    sinkbasin1 - receptacle
+    stoveburner1 - receptacle
+    stoveburner2 - receptacle
+    stoveburner3 - receptacle
+    stoveburner4 - receptacle
+    toaster1 - receptacle
+    init_receptacle - receptacle
+    saltshaker - object
+  )
+  
+  (:init
+    (agent-at init_receptacle)
+    (closed cabinet1)
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (closed cabinet5)
+    (closed cabinet6)
+    (closed drawer1)
+    (closed drawer2)
+    (closed drawer3)
+    (closed fridge1)
+    (closed microwave1)
+    (closed sinkbasin1)
+    (closed stoveburner1)
+    (closed stoveburner2)
+    (closed stoveburner3)
+    (closed stoveburner4)
+    (closed toaster1)
+    (drawer drawer1)
+    (drawer drawer2)
+    (drawer drawer3)
+    (fridgeReceptacle fridge1)
+    (microwaveReceptacle microwave1)
+    (sinkbasinReceptacle sinkbasin1)
+  )
+  
+  (:goal (exists (?d - drawer) (object-at saltshaker ?d)))
+)
+Actions: None
+Solver stderr: warning: quantified var ?D has unknown or empty type DRAWER. simplifying.
+
+
+warning: parameter ?SHARP_O of op SLICEOBJECT has unknown or empty type SHARPOBJECT. skipping op
+warning: parameter ?R of op COOLOBJECT has unknown or empty type FRIDGERECEPTACLE. skipping op
+warning: parameter ?R of op CLEANOBJECT has unknown or empty type SINKBASINRECEPTACLE. skipping op
+warning: parameter ?R of op HEATOBJECT has unknown or empty type MICROWAVERECEPTACLE. skipping op
+undeclared predicate USED used in domain definition
+Plan text:
+
+--Small Loop--: 3
+=== PROMPT SENT TO LLM ===
+Please provide the output in strict JSON format, without any additional text or explanation, including a PDDL domain file as 'df' and a PDDL problem file as 'pf'. 
+The format should strictly be:
+    {{
+    "df": "...",
+    "pf": "..."
+    }}
+
+
+        You are in an environment that you must explore step by step. Your task is to build and update PDDL files for the environment using only your direct observations. Do not create or assume any objects, relationships, or details that have not been observed, and ensure you include all observations.
+
+        The environment is a room containing various objects. Some of these objects are on, in, or contained within other objects and receptacles. You will initially be located as init_receptacle. You can assume all receptacles are freely reachable.
+        
+        Now, Your task is to: put a saltshaker in drawer.
+        Here are your current observations: Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+        Only the following actions are allowed: (There are only two types: object and receptacle)
+        1. go to a receptacle
+            :action GotoLocation
+            :parameters (?from - receptacle ?to - receptacle)
+        2. open a receptacle if it is closed
+            :action OpenObject
+            :parameters (?r - receptacle)
+        3. close a receptacle
+            :action CloseObject
+            :parameters (?r - receptacle)
+        4. take an object from another receptacle
+            :action PickupObject
+            :parameters (?o - object ?r - receptacle)
+        5. put object into/on/in another receptacle
+            :action PutObject
+            :parameters (?o - object ?r - receptacle)
+        6. using an object/receptacle by turning it on/off with a switch
+            :action useObject
+            :parameters (?o - object)
+        7. heat an object using a receptacle
+            :action HeatObject
+            :parameters (?o - object ?r - microwaveReceptacle)
+        8. clean an object using a receptacle
+            :action CleanObject
+            :parameters (?o - object ?r - sinkbasinReceptacle)
+        9. cool an object using a receptacle
+            :action CoolObject
+            :parameters (?o - object ?r - fridgeReceptacle)
+        10. slice an object using a sharp object
+            :action SliceObject
+            :parameters (?r - receptacle ?co - object ?sharp_o - sharpObject)
+
+        You must go to a receptacle first in order to use/open it or take/put objects from/on it.
+
+        The process involves two main stages:
+
+        1. Always searching for the aim Object first!!!
+            In this stage, your goal is to go to and may need to open new, unvisited recepatacles until you find the object mentioned in the task. Some receptacles cannot be opened so you can directly see what objects after you go to that receptacle.
+
+            You can only use the GotoLocation action to travel to a new location and the OpenObject action (if the receptacle is closed) to verify whether it contains the target object.
+
+            Goal 1.1: Reach a location that has not been visited (the location should be a receptacle) using the GotoLocation action. 
+                You goal should look like this:
+                (:goal 
+                    (at ?recepatacle)
+                ) where recepatacle should be somewhere or some recepatacles not visited.
+
+            Goal 1.2: If you already go to the recepatacle and found the recepatacle is closed, use the OpenObject action to open it and inspect the contents. 
+                Your goal should look like this:
+                (:goal 
+                    (opened ?recepatacle)
+                ) where recepatacle should be the recepatacle you want to open.
+
+        2. After you seeing the aim object in any receptacle, using the Object to Complete the Task:
+            After you have located the object (the object may have some numbers added), you should always first pick up the object from that receptacle and update your goal to focus on how the object is used to complete the task. Remember your goal is Your task is to: put a saltshaker in drawer.. Based on different adjectives, you may need to perform different actions for the object in different ways.
+
+            This may involve more than simply transferring it from one place to another.
+            For example: You might examine the object or a nearby receptacle to gather information. You may need to use another tool or device (like a lamp or a switch). Some tasks require you to slice, heat, cool, or clean the object using an appropriate receptacle (e.g., microwave, sink, fridge).
+
+            If necessary, use the PickupObject action to retrieve the item, and the GotoLocation action to move to the correct place.
+            Then, apply the object in a purposeful way — not just move it — but interact with the environment to fulfill the task’s actual goal.
+
+            Hint: 
+            1. If you want to heat, clean, and cool an object, after you go to that aim receptacle, do not put the object in the receptacle but do the action directly. For example, go to fridge, then cool the object with receptacle.
+            2. If you want to slice an object, you should first go to the receptacle where both the sharp object and the aim object are located and ONLY pick up the sharp object then do the slice action. Don't forget to put the sharp object back to the receptacle after you finish slicing.
+            3. If you want to examine or look at an object with a lamp, you should first go to the receptacle where the object is located and then pick it up and take the USE action of the lamp. You don't need to take the lamp but directly use it.
+            4. If there are multiple actions needed to complete the task, you can break them down into smaller subgoals. For example, if you need to slice and then heat an object, first focus on slicing it, and then move on to heating it.
+
+        In summary, the first stage is all about finding the object—this might involve going to an unvisited receptacle and opening it if necessary.
+        
+        Note: 
+        1. some receptacles have numbers in their names. Always keep them as they are. For example, "towelholder1" should not be changed to "towelholder".
+        2. Your initial goal should always be to go to a new location instead of put something into somewhere.
+        3. Do not enter stage 2 when not finishing stage 1.
+
+        Note: Always include :negative-preconditions in your :requirements whenever you use (not …) or delete effects, and never leave an :precondition or :effect block empty—either omit it or include at least one literal.
+    
+
+
+This is all the memory you have in this game including each action and its corresponding observations: 
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+You have already generated df and pf files according to the observations.
+This is previous domain file: 
+(define (domain saltshaker-in-drawer) 
+  (:requirements :strips :typing :negative-preconditions)
+  (:types receptacle object)
+  (:predicates 
+    (agent-at ?x - receptacle)
+    (opened ?r - receptacle)
+    (holding ?o - object)
+    (object-at ?o - object ?r - receptacle)
+    (closed ?r - receptacle)
+    (drawer ?r - receptacle)
+    (fridgeReceptacle ?r - receptacle)
+    (microwaveReceptacle ?r - receptacle)
+    (sinkbasinReceptacle ?r - receptacle)
+    (sharpObject ?o - object)
+  )
+  
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (and (agent-at ?from) (not (agent-at ?to)))
+    :effect (and (not (agent-at ?from)) (agent-at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (closed ?r))
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (opened ?r))
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (object-at ?o ?r) (not (holding ?o)))
+    :effect (and (not (object-at ?o ?r)) (holding ?o))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (not (object-at ?o ?r)))
+    :effect (and (not (holding ?o)) (object-at ?o ?r))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (and (holding ?o))
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - microwaveReceptacle)
+    :precondition (and (agent-at ?r) (holding ?o))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - sinkbasinReceptacle)
+    :precondition (and (agent-at ?r) (holding ?o))
+    :effect (cleaned ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - fridgeReceptacle)
+    :precondition (and (agent-at ?r) (holding ?o))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - sharpObject)
+    :precondition (and (agent-at ?r) (holding ?sharp_o) (object-at ?co ?r))
+    :effect (sliced ?co)
+  )
+)
+
+This is previous problem file: 
+(define (problem saltshaker-in-drawer)
+  (:domain saltshaker-in-drawer)
+  (:objects 
+    cabinet1 - receptacle
+    cabinet2 - receptacle
+    cabinet3 - receptacle
+    cabinet4 - receptacle
+    cabinet5 - receptacle
+    cabinet6 - receptacle
+    coffeemachine1 - receptacle
+    countertop1 - receptacle
+    countertop2 - receptacle
+    countertop3 - receptacle
+    drawer1 - receptacle
+    drawer2 - receptacle
+    drawer3 - receptacle
+    fridge1 - receptacle
+    garbagecan1 - receptacle
+    microwave1 - receptacle
+    shelf1 - receptacle
+    shelf2 - receptacle
+    shelf3 - receptacle
+    sinkbasin1 - receptacle
+    stoveburner1 - receptacle
+    stoveburner2 - receptacle
+    stoveburner3 - receptacle
+    stoveburner4 - receptacle
+    toaster1 - receptacle
+    init_receptacle - receptacle
+    saltshaker - object
+  )
+  
+  (:init
+    (agent-at init_receptacle)
+    (closed cabinet1)
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (closed cabinet5)
+    (closed cabinet6)
+    (closed drawer1)
+    (closed drawer2)
+    (closed drawer3)
+    (closed fridge1)
+    (closed microwave1)
+    (closed sinkbasin1)
+    (closed stoveburner1)
+    (closed stoveburner2)
+    (closed stoveburner3)
+    (closed stoveburner4)
+    (closed toaster1)
+    (drawer drawer1)
+    (drawer drawer2)
+    (drawer drawer3)
+    (fridgeReceptacle fridge1)
+    (microwaveReceptacle microwave1)
+    (sinkbasinReceptacle sinkbasin1)
+  )
+  
+  (:goal (exists (?d - drawer) (object-at saltshaker ?d)))
+)
+
+
+
+
+You made some mistakes when generating those files. Here is the error message: 
+warning: quantified var ?D has unknown or empty type DRAWER. simplifying.
+
+
+warning: parameter ?SHARP_O of op SLICEOBJECT has unknown or empty type SHARPOBJECT. skipping op
+warning: parameter ?R of op COOLOBJECT has unknown or empty type FRIDGERECEPTACLE. skipping op
+warning: parameter ?R of op CLEANOBJECT has unknown or empty type SINKBASINRECEPTACLE. skipping op
+warning: parameter ?R of op HEATOBJECT has unknown or empty type MICROWAVERECEPTACLE. skipping op
+undeclared predicate USED used in domain definition
+
+
+
+Now rewrite both the domain and problem files with the minimal fix.
+
+=== END PROMPT ===
+=== RAW LLM RESPONSE ===
+{
+  "df": "(define (domain saltshaker-in-drawer) \n  (:requirements :strips :typing :negative-preconditions)\n  (:types receptacle object)\n  (:predicates \n    (agent-at ?x - receptacle)\n    (opened ?r - receptacle)\n    (holding ?o - object)\n    (object-at ?o - object ?r - receptacle)\n    (closed ?r - receptacle)\n    (drawer ?r - receptacle)\n    (fridgeReceptacle ?r - receptacle)\n    (microwaveReceptacle ?r - receptacle)\n    (sinkbasinReceptacle ?r - receptacle)\n    (sharpObject ?o - object)\n    (used ?o - object)\n  )\n\n  (:action GotoLocation\n    :parameters (?from - receptacle ?to - receptacle)\n    :precondition (and (agent-at ?from) (not (agent-at ?to)))\n    :effect (and (not (agent-at ?from)) (agent-at ?to))\n  )\n\n  (:action OpenObject\n    :parameters (?r - receptacle)\n    :precondition (and (agent-at ?r) (closed ?r))\n    :effect (and (not (closed ?r)) (opened ?r))\n  )\n\n  (:action CloseObject\n    :parameters (?r - receptacle)\n    :precondition (and (agent-at ?r) (opened ?r))\n    :effect (and (not (opened ?r)) (closed ?r))\n  )\n\n  (:action PickupObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (object-at ?o ?r) (not (holding ?o)))\n    :effect (and (not (object-at ?o ?r)) (holding ?o))\n  )\n\n  (:action PutObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (holding ?o) (not (object-at ?o ?r)))\n    :effect (and (not (holding ?o)) (object-at ?o ?r))\n  )\n\n  (:action useObject\n    :parameters (?o - object)\n    :precondition (and (holding ?o))\n    :effect (used ?o)\n  )\n\n  (:action HeatObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (holding ?o) (microwaveReceptacle ?r))\n    :effect (heated ?o)\n  )\n\n  (:action CleanObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (holding ?o) (sinkbasinReceptacle ?r))\n    :effect (cleaned ?o)\n  )\n\n  (:action CoolObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (holding ?o) (fridgeReceptacle ?r))\n    :effect (cooled ?o)\n  )\n\n  (:action SliceObject\n    :parameters (?r - receptacle ?co - object ?sharp_o - object)\n    :precondition (and (agent-at ?r) (holding ?sharp_o) (object-at ?co ?r) (sharpObject ?sharp_o))\n    :effect (sliced ?co)\n  )\n)\n",
+  "pf": "(define (problem saltshaker-in-drawer)\n  (:domain saltshaker-in-drawer)\n  (:objects \n    cabinet1 - receptacle\n    cabinet2 - receptacle\n    cabinet3 - receptacle\n    cabinet4 - receptacle\n    cabinet5 - receptacle\n    cabinet6 - receptacle\n    coffeemachine1 - receptacle\n    countertop1 - receptacle\n    countertop2 - receptacle\n    countertop3 - receptacle\n    drawer1 - receptacle\n    drawer2 - receptacle\n    drawer3 - receptacle\n    fridge1 - receptacle\n    garbagecan1 - receptacle\n    microwave1 - receptacle\n    shelf1 - receptacle\n    shelf2 - receptacle\n    shelf3 - receptacle\n    sinkbasin1 - receptacle\n    stoveburner1 - receptacle\n    stoveburner2 - receptacle\n    stoveburner3 - receptacle\n    stoveburner4 - receptacle\n    toaster1 - receptacle\n    init_receptacle - receptacle\n    saltshaker - object\n  )\n\n  (:init\n    (agent-at init_receptacle)\n    (closed cabinet1)\n    (closed cabinet2)\n    (closed cabinet3)\n    (closed cabinet4)\n    (closed cabinet5)\n    (closed cabinet6)\n    (closed drawer1)\n    (closed drawer2)\n    (closed drawer3)\n    (closed fridge1)\n    (closed microwave1)\n    (closed sinkbasin1)\n    (closed stoveburner1)\n    (closed stoveburner2)\n    (closed stoveburner3)\n    (closed stoveburner4)\n    (closed toaster1)\n    (drawer drawer1)\n    (drawer drawer2)\n    (drawer drawer3)\n    (fridgeReceptacle fridge1)\n    (microwaveReceptacle microwave1)\n    (sinkbasinReceptacle sinkbasin1)\n  )\n\n  (:goal (exists (?d - receptacle) (and (drawer ?d) (object-at saltshaker ?d))))\n)\n"
+}
+=== END RESPONSE ===
+Generated df and pf:
+(define (domain saltshaker-in-drawer) 
+  (:requirements :strips :typing :negative-preconditions)
+  (:types receptacle object)
+  (:predicates 
+    (agent-at ?x - receptacle)
+    (opened ?r - receptacle)
+    (holding ?o - object)
+    (object-at ?o - object ?r - receptacle)
+    (closed ?r - receptacle)
+    (drawer ?r - receptacle)
+    (fridgeReceptacle ?r - receptacle)
+    (microwaveReceptacle ?r - receptacle)
+    (sinkbasinReceptacle ?r - receptacle)
+    (sharpObject ?o - object)
+    (used ?o - object)
+  )
+
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (and (agent-at ?from) (not (agent-at ?to)))
+    :effect (and (not (agent-at ?from)) (agent-at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (closed ?r))
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (opened ?r))
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (object-at ?o ?r) (not (holding ?o)))
+    :effect (and (not (object-at ?o ?r)) (holding ?o))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (not (object-at ?o ?r)))
+    :effect (and (not (holding ?o)) (object-at ?o ?r))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (and (holding ?o))
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (microwaveReceptacle ?r))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (sinkbasinReceptacle ?r))
+    :effect (cleaned ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (fridgeReceptacle ?r))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - object)
+    :precondition (and (agent-at ?r) (holding ?sharp_o) (object-at ?co ?r) (sharpObject ?sharp_o))
+    :effect (sliced ?co)
+  )
+)
+
+(define (problem saltshaker-in-drawer)
+  (:domain saltshaker-in-drawer)
+  (:objects 
+    cabinet1 - receptacle
+    cabinet2 - receptacle
+    cabinet3 - receptacle
+    cabinet4 - receptacle
+    cabinet5 - receptacle
+    cabinet6 - receptacle
+    coffeemachine1 - receptacle
+    countertop1 - receptacle
+    countertop2 - receptacle
+    countertop3 - receptacle
+    drawer1 - receptacle
+    drawer2 - receptacle
+    drawer3 - receptacle
+    fridge1 - receptacle
+    garbagecan1 - receptacle
+    microwave1 - receptacle
+    shelf1 - receptacle
+    shelf2 - receptacle
+    shelf3 - receptacle
+    sinkbasin1 - receptacle
+    stoveburner1 - receptacle
+    stoveburner2 - receptacle
+    stoveburner3 - receptacle
+    stoveburner4 - receptacle
+    toaster1 - receptacle
+    init_receptacle - receptacle
+    saltshaker - object
+  )
+
+  (:init
+    (agent-at init_receptacle)
+    (closed cabinet1)
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (closed cabinet5)
+    (closed cabinet6)
+    (closed drawer1)
+    (closed drawer2)
+    (closed drawer3)
+    (closed fridge1)
+    (closed microwave1)
+    (closed sinkbasin1)
+    (closed stoveburner1)
+    (closed stoveburner2)
+    (closed stoveburner3)
+    (closed stoveburner4)
+    (closed toaster1)
+    (drawer drawer1)
+    (drawer drawer2)
+    (drawer drawer3)
+    (fridgeReceptacle fridge1)
+    (microwaveReceptacle microwave1)
+    (sinkbasinReceptacle sinkbasin1)
+  )
+
+  (:goal (exists (?d - receptacle) (and (drawer ?d) (object-at saltshaker ?d))))
+)
+
+Actions: None
+Solver stderr: undeclared predicate SLICED used in domain definition
+Plan text:
+
+--Small Loop--: 4
+=== PROMPT SENT TO LLM ===
+Please provide the output in strict JSON format, without any additional text or explanation, including a PDDL domain file as 'df' and a PDDL problem file as 'pf'. 
+The format should strictly be:
+    {{
+    "df": "...",
+    "pf": "..."
+    }}
+
+
+        You are in an environment that you must explore step by step. Your task is to build and update PDDL files for the environment using only your direct observations. Do not create or assume any objects, relationships, or details that have not been observed, and ensure you include all observations.
+
+        The environment is a room containing various objects. Some of these objects are on, in, or contained within other objects and receptacles. You will initially be located as init_receptacle. You can assume all receptacles are freely reachable.
+        
+        Now, Your task is to: put a saltshaker in drawer.
+        Here are your current observations: Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+        Only the following actions are allowed: (There are only two types: object and receptacle)
+        1. go to a receptacle
+            :action GotoLocation
+            :parameters (?from - receptacle ?to - receptacle)
+        2. open a receptacle if it is closed
+            :action OpenObject
+            :parameters (?r - receptacle)
+        3. close a receptacle
+            :action CloseObject
+            :parameters (?r - receptacle)
+        4. take an object from another receptacle
+            :action PickupObject
+            :parameters (?o - object ?r - receptacle)
+        5. put object into/on/in another receptacle
+            :action PutObject
+            :parameters (?o - object ?r - receptacle)
+        6. using an object/receptacle by turning it on/off with a switch
+            :action useObject
+            :parameters (?o - object)
+        7. heat an object using a receptacle
+            :action HeatObject
+            :parameters (?o - object ?r - microwaveReceptacle)
+        8. clean an object using a receptacle
+            :action CleanObject
+            :parameters (?o - object ?r - sinkbasinReceptacle)
+        9. cool an object using a receptacle
+            :action CoolObject
+            :parameters (?o - object ?r - fridgeReceptacle)
+        10. slice an object using a sharp object
+            :action SliceObject
+            :parameters (?r - receptacle ?co - object ?sharp_o - sharpObject)
+
+        You must go to a receptacle first in order to use/open it or take/put objects from/on it.
+
+        The process involves two main stages:
+
+        1. Always searching for the aim Object first!!!
+            In this stage, your goal is to go to and may need to open new, unvisited recepatacles until you find the object mentioned in the task. Some receptacles cannot be opened so you can directly see what objects after you go to that receptacle.
+
+            You can only use the GotoLocation action to travel to a new location and the OpenObject action (if the receptacle is closed) to verify whether it contains the target object.
+
+            Goal 1.1: Reach a location that has not been visited (the location should be a receptacle) using the GotoLocation action. 
+                You goal should look like this:
+                (:goal 
+                    (at ?recepatacle)
+                ) where recepatacle should be somewhere or some recepatacles not visited.
+
+            Goal 1.2: If you already go to the recepatacle and found the recepatacle is closed, use the OpenObject action to open it and inspect the contents. 
+                Your goal should look like this:
+                (:goal 
+                    (opened ?recepatacle)
+                ) where recepatacle should be the recepatacle you want to open.
+
+        2. After you seeing the aim object in any receptacle, using the Object to Complete the Task:
+            After you have located the object (the object may have some numbers added), you should always first pick up the object from that receptacle and update your goal to focus on how the object is used to complete the task. Remember your goal is Your task is to: put a saltshaker in drawer.. Based on different adjectives, you may need to perform different actions for the object in different ways.
+
+            This may involve more than simply transferring it from one place to another.
+            For example: You might examine the object or a nearby receptacle to gather information. You may need to use another tool or device (like a lamp or a switch). Some tasks require you to slice, heat, cool, or clean the object using an appropriate receptacle (e.g., microwave, sink, fridge).
+
+            If necessary, use the PickupObject action to retrieve the item, and the GotoLocation action to move to the correct place.
+            Then, apply the object in a purposeful way — not just move it — but interact with the environment to fulfill the task’s actual goal.
+
+            Hint: 
+            1. If you want to heat, clean, and cool an object, after you go to that aim receptacle, do not put the object in the receptacle but do the action directly. For example, go to fridge, then cool the object with receptacle.
+            2. If you want to slice an object, you should first go to the receptacle where both the sharp object and the aim object are located and ONLY pick up the sharp object then do the slice action. Don't forget to put the sharp object back to the receptacle after you finish slicing.
+            3. If you want to examine or look at an object with a lamp, you should first go to the receptacle where the object is located and then pick it up and take the USE action of the lamp. You don't need to take the lamp but directly use it.
+            4. If there are multiple actions needed to complete the task, you can break them down into smaller subgoals. For example, if you need to slice and then heat an object, first focus on slicing it, and then move on to heating it.
+
+        In summary, the first stage is all about finding the object—this might involve going to an unvisited receptacle and opening it if necessary.
+        
+        Note: 
+        1. some receptacles have numbers in their names. Always keep them as they are. For example, "towelholder1" should not be changed to "towelholder".
+        2. Your initial goal should always be to go to a new location instead of put something into somewhere.
+        3. Do not enter stage 2 when not finishing stage 1.
+
+        Note: Always include :negative-preconditions in your :requirements whenever you use (not …) or delete effects, and never leave an :precondition or :effect block empty—either omit it or include at least one literal.
+    
+
+
+This is all the memory you have in this game including each action and its corresponding observations: 
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+You have already generated df and pf files according to the observations.
+This is previous domain file: 
+(define (domain saltshaker-in-drawer) 
+  (:requirements :strips :typing :negative-preconditions)
+  (:types receptacle object)
+  (:predicates 
+    (agent-at ?x - receptacle)
+    (opened ?r - receptacle)
+    (holding ?o - object)
+    (object-at ?o - object ?r - receptacle)
+    (closed ?r - receptacle)
+    (drawer ?r - receptacle)
+    (fridgeReceptacle ?r - receptacle)
+    (microwaveReceptacle ?r - receptacle)
+    (sinkbasinReceptacle ?r - receptacle)
+    (sharpObject ?o - object)
+    (used ?o - object)
+  )
+
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (and (agent-at ?from) (not (agent-at ?to)))
+    :effect (and (not (agent-at ?from)) (agent-at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (closed ?r))
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (opened ?r))
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (object-at ?o ?r) (not (holding ?o)))
+    :effect (and (not (object-at ?o ?r)) (holding ?o))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (not (object-at ?o ?r)))
+    :effect (and (not (holding ?o)) (object-at ?o ?r))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (and (holding ?o))
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (microwaveReceptacle ?r))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (sinkbasinReceptacle ?r))
+    :effect (cleaned ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (fridgeReceptacle ?r))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - object)
+    :precondition (and (agent-at ?r) (holding ?sharp_o) (object-at ?co ?r) (sharpObject ?sharp_o))
+    :effect (sliced ?co)
+  )
+)
+
+
+This is previous problem file: 
+(define (problem saltshaker-in-drawer)
+  (:domain saltshaker-in-drawer)
+  (:objects 
+    cabinet1 - receptacle
+    cabinet2 - receptacle
+    cabinet3 - receptacle
+    cabinet4 - receptacle
+    cabinet5 - receptacle
+    cabinet6 - receptacle
+    coffeemachine1 - receptacle
+    countertop1 - receptacle
+    countertop2 - receptacle
+    countertop3 - receptacle
+    drawer1 - receptacle
+    drawer2 - receptacle
+    drawer3 - receptacle
+    fridge1 - receptacle
+    garbagecan1 - receptacle
+    microwave1 - receptacle
+    shelf1 - receptacle
+    shelf2 - receptacle
+    shelf3 - receptacle
+    sinkbasin1 - receptacle
+    stoveburner1 - receptacle
+    stoveburner2 - receptacle
+    stoveburner3 - receptacle
+    stoveburner4 - receptacle
+    toaster1 - receptacle
+    init_receptacle - receptacle
+    saltshaker - object
+  )
+
+  (:init
+    (agent-at init_receptacle)
+    (closed cabinet1)
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (closed cabinet5)
+    (closed cabinet6)
+    (closed drawer1)
+    (closed drawer2)
+    (closed drawer3)
+    (closed fridge1)
+    (closed microwave1)
+    (closed sinkbasin1)
+    (closed stoveburner1)
+    (closed stoveburner2)
+    (closed stoveburner3)
+    (closed stoveburner4)
+    (closed toaster1)
+    (drawer drawer1)
+    (drawer drawer2)
+    (drawer drawer3)
+    (fridgeReceptacle fridge1)
+    (microwaveReceptacle microwave1)
+    (sinkbasinReceptacle sinkbasin1)
+  )
+
+  (:goal (exists (?d - receptacle) (and (drawer ?d) (object-at saltshaker ?d))))
+)
+
+
+
+
+
+You made some mistakes when generating those files. Here is the error message: 
+undeclared predicate SLICED used in domain definition
+
+
+
+Now rewrite both the domain and problem files with the minimal fix.
+
+=== END PROMPT ===
+=== RAW LLM RESPONSE ===
+{
+  "df": "(define (domain saltshaker-in-drawer) \n  (:requirements :strips :typing :negative-preconditions)\n  (:types receptacle object)\n  (:predicates \n    (agent-at ?x - receptacle)\n    (opened ?r - receptacle)\n    (holding ?o - object)\n    (object-at ?o - object ?r - receptacle)\n    (closed ?r - receptacle)\n    (drawer ?r - receptacle)\n    (fridgeReceptacle ?r - receptacle)\n    (microwaveReceptacle ?r - receptacle)\n    (sinkbasinReceptacle ?r - receptacle)\n    (sharpObject ?o - object)\n    (used ?o - object)\n    (sliced ?o - object)\n  )\n\n  (:action GotoLocation\n    :parameters (?from - receptacle ?to - receptacle)\n    :precondition (and (agent-at ?from) (not (agent-at ?to)))\n    :effect (and (not (agent-at ?from)) (agent-at ?to))\n  )\n\n  (:action OpenObject\n    :parameters (?r - receptacle)\n    :precondition (and (agent-at ?r) (closed ?r))\n    :effect (and (not (closed ?r)) (opened ?r))\n  )\n\n  (:action CloseObject\n    :parameters (?r - receptacle)\n    :precondition (and (agent-at ?r) (opened ?r))\n    :effect (and (not (opened ?r)) (closed ?r))\n  )\n\n  (:action PickupObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (object-at ?o ?r) (not (holding ?o)))\n    :effect (and (not (object-at ?o ?r)) (holding ?o))\n  )\n\n  (:action PutObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (holding ?o) (not (object-at ?o ?r)))\n    :effect (and (not (holding ?o)) (object-at ?o ?r))\n  )\n\n  (:action useObject\n    :parameters (?o - object)\n    :precondition (and (holding ?o))\n    :effect (used ?o)\n  )\n\n  (:action HeatObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (holding ?o) (microwaveReceptacle ?r))\n    :effect (heated ?o)\n  )\n\n  (:action CleanObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (holding ?o) (sinkbasinReceptacle ?r))\n    :effect (cleaned ?o)\n  )\n\n  (:action CoolObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (holding ?o) (fridgeReceptacle ?r))\n    :effect (cooled ?o)\n  )\n\n  (:action SliceObject\n    :parameters (?r - receptacle ?co - object ?sharp_o - object)\n    :precondition (and (agent-at ?r) (holding ?sharp_o) (object-at ?co ?r) (sharpObject ?sharp_o))\n    :effect (sliced ?co)\n  )\n)\n",
+  "pf": "(define (problem saltshaker-in-drawer)\n  (:domain saltshaker-in-drawer)\n  (:objects \n    cabinet1 - receptacle\n    cabinet2 - receptacle\n    cabinet3 - receptacle\n    cabinet4 - receptacle\n    cabinet5 - receptacle\n    cabinet6 - receptacle\n    coffeemachine1 - receptacle\n    countertop1 - receptacle\n    countertop2 - receptacle\n    countertop3 - receptacle\n    drawer1 - receptacle\n    drawer2 - receptacle\n    drawer3 - receptacle\n    fridge1 - receptacle\n    garbagecan1 - receptacle\n    microwave1 - receptacle\n    shelf1 - receptacle\n    shelf2 - receptacle\n    shelf3 - receptacle\n    sinkbasin1 - receptacle\n    stoveburner1 - receptacle\n    stoveburner2 - receptacle\n    stoveburner3 - receptacle\n    stoveburner4 - receptacle\n    toaster1 - receptacle\n    init_receptacle - receptacle\n    saltshaker - object\n  )\n\n  (:init\n    (agent-at init_receptacle)\n    (closed cabinet1)\n    (closed cabinet2)\n    (closed cabinet3)\n    (closed cabinet4)\n    (closed cabinet5)\n    (closed cabinet6)\n    (closed drawer1)\n    (closed drawer2)\n    (closed drawer3)\n    (closed fridge1)\n    (closed microwave1)\n    (closed sinkbasin1)\n    (closed stoveburner1)\n    (closed stoveburner2)\n    (closed stoveburner3)\n    (closed stoveburner4)\n    (closed toaster1)\n    (drawer drawer1)\n    (drawer drawer2)\n    (drawer drawer3)\n    (fridgeReceptacle fridge1)\n    (microwaveReceptacle microwave1)\n    (sinkbasinReceptacle sinkbasin1)\n  )\n\n  (:goal (exists (?d - receptacle) (and (drawer ?d) (object-at saltshaker ?d))))\n)\n"
+}
+=== END RESPONSE ===
+Generated df and pf:
+(define (domain saltshaker-in-drawer) 
+  (:requirements :strips :typing :negative-preconditions)
+  (:types receptacle object)
+  (:predicates 
+    (agent-at ?x - receptacle)
+    (opened ?r - receptacle)
+    (holding ?o - object)
+    (object-at ?o - object ?r - receptacle)
+    (closed ?r - receptacle)
+    (drawer ?r - receptacle)
+    (fridgeReceptacle ?r - receptacle)
+    (microwaveReceptacle ?r - receptacle)
+    (sinkbasinReceptacle ?r - receptacle)
+    (sharpObject ?o - object)
+    (used ?o - object)
+    (sliced ?o - object)
+  )
+
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (and (agent-at ?from) (not (agent-at ?to)))
+    :effect (and (not (agent-at ?from)) (agent-at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (closed ?r))
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (opened ?r))
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (object-at ?o ?r) (not (holding ?o)))
+    :effect (and (not (object-at ?o ?r)) (holding ?o))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (not (object-at ?o ?r)))
+    :effect (and (not (holding ?o)) (object-at ?o ?r))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (and (holding ?o))
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (microwaveReceptacle ?r))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (sinkbasinReceptacle ?r))
+    :effect (cleaned ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (fridgeReceptacle ?r))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - object)
+    :precondition (and (agent-at ?r) (holding ?sharp_o) (object-at ?co ?r) (sharpObject ?sharp_o))
+    :effect (sliced ?co)
+  )
+)
+
+(define (problem saltshaker-in-drawer)
+  (:domain saltshaker-in-drawer)
+  (:objects 
+    cabinet1 - receptacle
+    cabinet2 - receptacle
+    cabinet3 - receptacle
+    cabinet4 - receptacle
+    cabinet5 - receptacle
+    cabinet6 - receptacle
+    coffeemachine1 - receptacle
+    countertop1 - receptacle
+    countertop2 - receptacle
+    countertop3 - receptacle
+    drawer1 - receptacle
+    drawer2 - receptacle
+    drawer3 - receptacle
+    fridge1 - receptacle
+    garbagecan1 - receptacle
+    microwave1 - receptacle
+    shelf1 - receptacle
+    shelf2 - receptacle
+    shelf3 - receptacle
+    sinkbasin1 - receptacle
+    stoveburner1 - receptacle
+    stoveburner2 - receptacle
+    stoveburner3 - receptacle
+    stoveburner4 - receptacle
+    toaster1 - receptacle
+    init_receptacle - receptacle
+    saltshaker - object
+  )
+
+  (:init
+    (agent-at init_receptacle)
+    (closed cabinet1)
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (closed cabinet5)
+    (closed cabinet6)
+    (closed drawer1)
+    (closed drawer2)
+    (closed drawer3)
+    (closed fridge1)
+    (closed microwave1)
+    (closed sinkbasin1)
+    (closed stoveburner1)
+    (closed stoveburner2)
+    (closed stoveburner3)
+    (closed stoveburner4)
+    (closed toaster1)
+    (drawer drawer1)
+    (drawer drawer2)
+    (drawer drawer3)
+    (fridgeReceptacle fridge1)
+    (microwaveReceptacle microwave1)
+    (sinkbasinReceptacle sinkbasin1)
+  )
+
+  (:goal (exists (?d - receptacle) (and (drawer ?d) (object-at saltshaker ?d))))
+)
+
+Actions: None
+Solver stderr: undeclared predicate COOLED used in domain definition
+Plan text:
+
+--Small Loop--: 5
+=== PROMPT SENT TO LLM ===
+Please provide the output in strict JSON format, without any additional text or explanation, including a PDDL domain file as 'df' and a PDDL problem file as 'pf'. 
+The format should strictly be:
+    {{
+    "df": "...",
+    "pf": "..."
+    }}
+
+
+        You are in an environment that you must explore step by step. Your task is to build and update PDDL files for the environment using only your direct observations. Do not create or assume any objects, relationships, or details that have not been observed, and ensure you include all observations.
+
+        The environment is a room containing various objects. Some of these objects are on, in, or contained within other objects and receptacles. You will initially be located as init_receptacle. You can assume all receptacles are freely reachable.
+        
+        Now, Your task is to: put a saltshaker in drawer.
+        Here are your current observations: Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+        Only the following actions are allowed: (There are only two types: object and receptacle)
+        1. go to a receptacle
+            :action GotoLocation
+            :parameters (?from - receptacle ?to - receptacle)
+        2. open a receptacle if it is closed
+            :action OpenObject
+            :parameters (?r - receptacle)
+        3. close a receptacle
+            :action CloseObject
+            :parameters (?r - receptacle)
+        4. take an object from another receptacle
+            :action PickupObject
+            :parameters (?o - object ?r - receptacle)
+        5. put object into/on/in another receptacle
+            :action PutObject
+            :parameters (?o - object ?r - receptacle)
+        6. using an object/receptacle by turning it on/off with a switch
+            :action useObject
+            :parameters (?o - object)
+        7. heat an object using a receptacle
+            :action HeatObject
+            :parameters (?o - object ?r - microwaveReceptacle)
+        8. clean an object using a receptacle
+            :action CleanObject
+            :parameters (?o - object ?r - sinkbasinReceptacle)
+        9. cool an object using a receptacle
+            :action CoolObject
+            :parameters (?o - object ?r - fridgeReceptacle)
+        10. slice an object using a sharp object
+            :action SliceObject
+            :parameters (?r - receptacle ?co - object ?sharp_o - sharpObject)
+
+        You must go to a receptacle first in order to use/open it or take/put objects from/on it.
+
+        The process involves two main stages:
+
+        1. Always searching for the aim Object first!!!
+            In this stage, your goal is to go to and may need to open new, unvisited recepatacles until you find the object mentioned in the task. Some receptacles cannot be opened so you can directly see what objects after you go to that receptacle.
+
+            You can only use the GotoLocation action to travel to a new location and the OpenObject action (if the receptacle is closed) to verify whether it contains the target object.
+
+            Goal 1.1: Reach a location that has not been visited (the location should be a receptacle) using the GotoLocation action. 
+                You goal should look like this:
+                (:goal 
+                    (at ?recepatacle)
+                ) where recepatacle should be somewhere or some recepatacles not visited.
+
+            Goal 1.2: If you already go to the recepatacle and found the recepatacle is closed, use the OpenObject action to open it and inspect the contents. 
+                Your goal should look like this:
+                (:goal 
+                    (opened ?recepatacle)
+                ) where recepatacle should be the recepatacle you want to open.
+
+        2. After you seeing the aim object in any receptacle, using the Object to Complete the Task:
+            After you have located the object (the object may have some numbers added), you should always first pick up the object from that receptacle and update your goal to focus on how the object is used to complete the task. Remember your goal is Your task is to: put a saltshaker in drawer.. Based on different adjectives, you may need to perform different actions for the object in different ways.
+
+            This may involve more than simply transferring it from one place to another.
+            For example: You might examine the object or a nearby receptacle to gather information. You may need to use another tool or device (like a lamp or a switch). Some tasks require you to slice, heat, cool, or clean the object using an appropriate receptacle (e.g., microwave, sink, fridge).
+
+            If necessary, use the PickupObject action to retrieve the item, and the GotoLocation action to move to the correct place.
+            Then, apply the object in a purposeful way — not just move it — but interact with the environment to fulfill the task’s actual goal.
+
+            Hint: 
+            1. If you want to heat, clean, and cool an object, after you go to that aim receptacle, do not put the object in the receptacle but do the action directly. For example, go to fridge, then cool the object with receptacle.
+            2. If you want to slice an object, you should first go to the receptacle where both the sharp object and the aim object are located and ONLY pick up the sharp object then do the slice action. Don't forget to put the sharp object back to the receptacle after you finish slicing.
+            3. If you want to examine or look at an object with a lamp, you should first go to the receptacle where the object is located and then pick it up and take the USE action of the lamp. You don't need to take the lamp but directly use it.
+            4. If there are multiple actions needed to complete the task, you can break them down into smaller subgoals. For example, if you need to slice and then heat an object, first focus on slicing it, and then move on to heating it.
+
+        In summary, the first stage is all about finding the object—this might involve going to an unvisited receptacle and opening it if necessary.
+        
+        Note: 
+        1. some receptacles have numbers in their names. Always keep them as they are. For example, "towelholder1" should not be changed to "towelholder".
+        2. Your initial goal should always be to go to a new location instead of put something into somewhere.
+        3. Do not enter stage 2 when not finishing stage 1.
+
+        Note: Always include :negative-preconditions in your :requirements whenever you use (not …) or delete effects, and never leave an :precondition or :effect block empty—either omit it or include at least one literal.
+    
+
+
+This is all the memory you have in this game including each action and its corresponding observations: 
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+You have already generated df and pf files according to the observations.
+This is previous domain file: 
+(define (domain saltshaker-in-drawer) 
+  (:requirements :strips :typing :negative-preconditions)
+  (:types receptacle object)
+  (:predicates 
+    (agent-at ?x - receptacle)
+    (opened ?r - receptacle)
+    (holding ?o - object)
+    (object-at ?o - object ?r - receptacle)
+    (closed ?r - receptacle)
+    (drawer ?r - receptacle)
+    (fridgeReceptacle ?r - receptacle)
+    (microwaveReceptacle ?r - receptacle)
+    (sinkbasinReceptacle ?r - receptacle)
+    (sharpObject ?o - object)
+    (used ?o - object)
+    (sliced ?o - object)
+  )
+
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (and (agent-at ?from) (not (agent-at ?to)))
+    :effect (and (not (agent-at ?from)) (agent-at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (closed ?r))
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (opened ?r))
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (object-at ?o ?r) (not (holding ?o)))
+    :effect (and (not (object-at ?o ?r)) (holding ?o))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (not (object-at ?o ?r)))
+    :effect (and (not (holding ?o)) (object-at ?o ?r))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (and (holding ?o))
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (microwaveReceptacle ?r))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (sinkbasinReceptacle ?r))
+    :effect (cleaned ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (fridgeReceptacle ?r))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - object)
+    :precondition (and (agent-at ?r) (holding ?sharp_o) (object-at ?co ?r) (sharpObject ?sharp_o))
+    :effect (sliced ?co)
+  )
+)
+
+
+This is previous problem file: 
+(define (problem saltshaker-in-drawer)
+  (:domain saltshaker-in-drawer)
+  (:objects 
+    cabinet1 - receptacle
+    cabinet2 - receptacle
+    cabinet3 - receptacle
+    cabinet4 - receptacle
+    cabinet5 - receptacle
+    cabinet6 - receptacle
+    coffeemachine1 - receptacle
+    countertop1 - receptacle
+    countertop2 - receptacle
+    countertop3 - receptacle
+    drawer1 - receptacle
+    drawer2 - receptacle
+    drawer3 - receptacle
+    fridge1 - receptacle
+    garbagecan1 - receptacle
+    microwave1 - receptacle
+    shelf1 - receptacle
+    shelf2 - receptacle
+    shelf3 - receptacle
+    sinkbasin1 - receptacle
+    stoveburner1 - receptacle
+    stoveburner2 - receptacle
+    stoveburner3 - receptacle
+    stoveburner4 - receptacle
+    toaster1 - receptacle
+    init_receptacle - receptacle
+    saltshaker - object
+  )
+
+  (:init
+    (agent-at init_receptacle)
+    (closed cabinet1)
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (closed cabinet5)
+    (closed cabinet6)
+    (closed drawer1)
+    (closed drawer2)
+    (closed drawer3)
+    (closed fridge1)
+    (closed microwave1)
+    (closed sinkbasin1)
+    (closed stoveburner1)
+    (closed stoveburner2)
+    (closed stoveburner3)
+    (closed stoveburner4)
+    (closed toaster1)
+    (drawer drawer1)
+    (drawer drawer2)
+    (drawer drawer3)
+    (fridgeReceptacle fridge1)
+    (microwaveReceptacle microwave1)
+    (sinkbasinReceptacle sinkbasin1)
+  )
+
+  (:goal (exists (?d - receptacle) (and (drawer ?d) (object-at saltshaker ?d))))
+)
+
+
+
+
+
+You made some mistakes when generating those files. Here is the error message: 
+undeclared predicate COOLED used in domain definition
+
+
+
+Now rewrite both the domain and problem files with the minimal fix.
+
+=== END PROMPT ===
+=== RAW LLM RESPONSE ===
+{
+  "df": "(define (domain saltshaker-in-drawer) \n  (:requirements :strips :typing :negative-preconditions)\n  (:types receptacle object)\n  (:predicates \n    (agent-at ?x - receptacle)\n    (opened ?r - receptacle)\n    (holding ?o - object)\n    (object-at ?o - object ?r - receptacle)\n    (closed ?r - receptacle)\n    (drawer ?r - receptacle)\n    (fridgeReceptacle ?r - receptacle)\n    (microwaveReceptacle ?r - receptacle)\n    (sinkbasinReceptacle ?r - receptacle)\n    (sharpObject ?o - object)\n    (used ?o - object)\n    (sliced ?o - object)\n    (cooled ?o - object)\n  )\n\n  (:action GotoLocation\n    :parameters (?from - receptacle ?to - receptacle)\n    :precondition (and (agent-at ?from) (not (agent-at ?to)))\n    :effect (and (not (agent-at ?from)) (agent-at ?to))\n  )\n\n  (:action OpenObject\n    :parameters (?r - receptacle)\n    :precondition (and (agent-at ?r) (closed ?r))\n    :effect (and (not (closed ?r)) (opened ?r))\n  )\n\n  (:action CloseObject\n    :parameters (?r - receptacle)\n    :precondition (and (agent-at ?r) (opened ?r))\n    :effect (and (not (opened ?r)) (closed ?r))\n  )\n\n  (:action PickupObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (object-at ?o ?r) (not (holding ?o)))\n    :effect (and (not (object-at ?o ?r)) (holding ?o))\n  )\n\n  (:action PutObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (holding ?o) (not (object-at ?o ?r)))\n    :effect (and (not (holding ?o)) (object-at ?o ?r))\n  )\n\n  (:action useObject\n    :parameters (?o - object)\n    :precondition (and (holding ?o))\n    :effect (used ?o)\n  )\n\n  (:action HeatObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (holding ?o) (microwaveReceptacle ?r))\n    :effect (heated ?o)\n  )\n\n  (:action CleanObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (holding ?o) (sinkbasinReceptacle ?r))\n    :effect (cleaned ?o)\n  )\n\n  (:action CoolObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (agent-at ?r) (holding ?o) (fridgeReceptacle ?r))\n    :effect (cooled ?o)\n  )\n\n  (:action SliceObject\n    :parameters (?r - receptacle ?co - object ?sharp_o - object)\n    :precondition (and (agent-at ?r) (holding ?sharp_o) (object-at ?co ?r) (sharpObject ?sharp_o))\n    :effect (sliced ?co)\n  )\n)\n",
+  "pf": "(define (problem saltshaker-in-drawer)\n  (:domain saltshaker-in-drawer)\n  (:objects \n    cabinet1 - receptacle\n    cabinet2 - receptacle\n    cabinet3 - receptacle\n    cabinet4 - receptacle\n    cabinet5 - receptacle\n    cabinet6 - receptacle\n    coffeemachine1 - receptacle\n    countertop1 - receptacle\n    countertop2 - receptacle\n    countertop3 - receptacle\n    drawer1 - receptacle\n    drawer2 - receptacle\n    drawer3 - receptacle\n    fridge1 - receptacle\n    garbagecan1 - receptacle\n    microwave1 - receptacle\n    shelf1 - receptacle\n    shelf2 - receptacle\n    shelf3 - receptacle\n    sinkbasin1 - receptacle\n    stoveburner1 - receptacle\n    stoveburner2 - receptacle\n    stoveburner3 - receptacle\n    stoveburner4 - receptacle\n    toaster1 - receptacle\n    init_receptacle - receptacle\n    saltshaker - object\n  )\n\n  (:init\n    (agent-at init_receptacle)\n    (closed cabinet1)\n    (closed cabinet2)\n    (closed cabinet3)\n    (closed cabinet4)\n    (closed cabinet5)\n    (closed cabinet6)\n    (closed drawer1)\n    (closed drawer2)\n    (closed drawer3)\n    (closed fridge1)\n    (closed microwave1)\n    (closed sinkbasin1)\n    (closed stoveburner1)\n    (closed stoveburner2)\n    (closed stoveburner3)\n    (closed stoveburner4)\n    (closed toaster1)\n    (drawer drawer1)\n    (drawer drawer2)\n    (drawer drawer3)\n    (fridgeReceptacle fridge1)\n    (microwaveReceptacle microwave1)\n    (sinkbasinReceptacle sinkbasin1)\n  )\n\n  (:goal (exists (?d - receptacle) (and (drawer ?d) (object-at saltshaker ?d))))\n)\n"
+}
+=== END RESPONSE ===
+Generated df and pf:
+(define (domain saltshaker-in-drawer) 
+  (:requirements :strips :typing :negative-preconditions)
+  (:types receptacle object)
+  (:predicates 
+    (agent-at ?x - receptacle)
+    (opened ?r - receptacle)
+    (holding ?o - object)
+    (object-at ?o - object ?r - receptacle)
+    (closed ?r - receptacle)
+    (drawer ?r - receptacle)
+    (fridgeReceptacle ?r - receptacle)
+    (microwaveReceptacle ?r - receptacle)
+    (sinkbasinReceptacle ?r - receptacle)
+    (sharpObject ?o - object)
+    (used ?o - object)
+    (sliced ?o - object)
+    (cooled ?o - object)
+  )
+
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (and (agent-at ?from) (not (agent-at ?to)))
+    :effect (and (not (agent-at ?from)) (agent-at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (closed ?r))
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (and (agent-at ?r) (opened ?r))
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (object-at ?o ?r) (not (holding ?o)))
+    :effect (and (not (object-at ?o ?r)) (holding ?o))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (not (object-at ?o ?r)))
+    :effect (and (not (holding ?o)) (object-at ?o ?r))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (and (holding ?o))
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (microwaveReceptacle ?r))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (sinkbasinReceptacle ?r))
+    :effect (cleaned ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (agent-at ?r) (holding ?o) (fridgeReceptacle ?r))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - object)
+    :precondition (and (agent-at ?r) (holding ?sharp_o) (object-at ?co ?r) (sharpObject ?sharp_o))
+    :effect (sliced ?co)
+  )
+)
+
+(define (problem saltshaker-in-drawer)
+  (:domain saltshaker-in-drawer)
+  (:objects 
+    cabinet1 - receptacle
+    cabinet2 - receptacle
+    cabinet3 - receptacle
+    cabinet4 - receptacle
+    cabinet5 - receptacle
+    cabinet6 - receptacle
+    coffeemachine1 - receptacle
+    countertop1 - receptacle
+    countertop2 - receptacle
+    countertop3 - receptacle
+    drawer1 - receptacle
+    drawer2 - receptacle
+    drawer3 - receptacle
+    fridge1 - receptacle
+    garbagecan1 - receptacle
+    microwave1 - receptacle
+    shelf1 - receptacle
+    shelf2 - receptacle
+    shelf3 - receptacle
+    sinkbasin1 - receptacle
+    stoveburner1 - receptacle
+    stoveburner2 - receptacle
+    stoveburner3 - receptacle
+    stoveburner4 - receptacle
+    toaster1 - receptacle
+    init_receptacle - receptacle
+    saltshaker - object
+  )
+
+  (:init
+    (agent-at init_receptacle)
+    (closed cabinet1)
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (closed cabinet5)
+    (closed cabinet6)
+    (closed drawer1)
+    (closed drawer2)
+    (closed drawer3)
+    (closed fridge1)
+    (closed microwave1)
+    (closed sinkbasin1)
+    (closed stoveburner1)
+    (closed stoveburner2)
+    (closed stoveburner3)
+    (closed stoveburner4)
+    (closed toaster1)
+    (drawer drawer1)
+    (drawer drawer2)
+    (drawer drawer3)
+    (fridgeReceptacle fridge1)
+    (microwaveReceptacle microwave1)
+    (sinkbasinReceptacle sinkbasin1)
+  )
+
+  (:goal (exists (?d - receptacle) (and (drawer ?d) (object-at saltshaker ?d))))
+)
+
+Actions: None
+Solver stderr: undeclared predicate CLEANED used in domain definition
+Plan text:
+
+Critical: No actions after small-loop retries. Ending trial.

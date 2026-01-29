@@ -1,0 +1,4201 @@
+Playing 8: /home/yl3427/.cache/alfworld/json_2.1.1/valid_unseen/pick_heat_then_place_in_recep-AppleSliced-None-GarbageCan-10/trial_T20190908_073656_715770
+Observations: -= Welcome to TextWorld, ALFRED! =-
+You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+Valid Actions: ['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to cabinet 5', 'go to cabinet 6', 'go to coffeemachine 1', 'go to countertop 1', 'go to countertop 2', 'go to countertop 3', 'go to drawer 1', 'go to drawer 2', 'go to drawer 3', 'go to fridge 1', 'go to garbagecan 1', 'go to microwave 1', 'go to shelf 1', 'go to shelf 2', 'go to shelf 3', 'go to sinkbasin 1', 'go to stoveburner 1', 'go to stoveburner 2', 'go to stoveburner 3', 'go to stoveburner 4', 'go to toaster 1']
+taskDescription: Your task is to: heat some sliced apple and put it in garbagecan.
+
+[Seed DF]
+;; Specification in PDDL of the Alfred domain
+;; Intended to be used with Fast Downward which supports PDDL 2.2 level 1 plus the :action-costs requirement from PDDL 3.1.
+
+(define (domain alfred)
+ (:requirements
+    :adl
+    :action-costs
+    :typing
+ )
+ (:types
+  agent
+  location
+  receptacle
+  object
+  rtype
+  otype
+  )
+
+
+ (:predicates
+    (atLocation ?a - agent ?l - location)                     ; true if the agent is at the location
+    (receptacleAtLocation ?r - receptacle ?l - location)      ; true if the receptacle is at the location (constant)
+    (objectAtLocation ?o - object ?l - location)              ; true if the object is at the location
+    (openable ?r - receptacle)                                ; true if a receptacle is openable
+    (opened ?r - receptacle)                                  ; true if a receptacle is opened
+    (inReceptacle ?o - object ?r - receptacle)                ; object ?o is in receptacle ?r
+    (isReceptacleObject ?o - object)                          ; true if the object can have things put inside it
+    (inReceptacleObject ?innerObject - object ?outerObject - object)                ; object ?innerObject is inside object ?outerObject
+    (isReceptacleObjectFull ?o - object)                      ; true if the receptacle object contains something
+    (wasInReceptacle ?o - object ?r - receptacle)             ; object ?o was or is in receptacle ?r now or some time in the past
+    (checked ?r - receptacle)                                 ; whether the receptacle has been looked inside/visited
+    (examined ?l - location)                                  ; TODO
+    (receptacleType ?r - receptacle ?t - rtype)               ; the type of receptacle (Cabinet vs Cabinet|01|2...)
+    (canContain ?rt - rtype ?ot - otype)                      ; true if receptacle can hold object
+    (objectType ?o - object ?t - otype)                       ; the type of object (Apple vs Apple|01|2...)
+    (holds ?a - agent ?o - object)                            ; object ?o is held by agent ?a
+    (holdsAny ?a - agent)                                     ; agent ?a holds an object
+    (holdsAnyReceptacleObject ?a - agent)                        ; agent ?a holds a receptacle object
+    (full ?r - receptacle)                                    ; true if the receptacle has no remaining space
+    (isClean ?o - object)                                     ; true if the object has been clean in sink
+    (cleanable ?o - object)                                   ; true if the object can be placed in a sink
+    (isHot ?o - object)                                       ; true if the object has been heated up
+    (heatable ?o - object)                                    ; true if the object can be heated up in a microwave
+    (isCool ?o - object)                                      ; true if the object has been cooled
+    (coolable ?o - object)                                    ; true if the object can be cooled in the fridge
+    (pickupable ?o - object)                                   ; true if the object can be picked up
+    (moveable ?o - object)                                      ; true if the object can be moved
+    (toggleable ?o - object)                                  ; true if the object can be turned on/off
+    (isOn ?o - object)                                        ; true if the object is on
+    (isToggled ?o - object)                                   ; true if the object has been toggled
+    (sliceable ?o - object)                                   ; true if the object can be sliced
+    (isSliced ?o - object)                                    ; true if the object is sliced
+ )
+
+  (:functions
+    (distance ?from ?to)
+    (total-cost) - number
+   )
+
+;; All actions are specified such that the final arguments are the ones used
+;; for performing actions in Unity.
+
+
+(:action look
+    :parameters (?a - agent ?l - location)
+    :precondition
+        (and
+            (atLocation ?a ?l)
+        )
+    :effect
+        (and
+            (checked ?l)
+        )
+)
+
+(:action inventory
+    :parameters (?a - agent)
+    :precondition
+        ()
+    :effect
+        (and
+            (checked ?a)
+        )
+)
+
+(:action examineReceptacle
+    :parameters (?a - agent ?r - receptacle)
+    :precondition
+        (and
+            (exists (?l - location)
+                (and
+                    (atLocation ?a ?l)
+                    (receptacleAtLocation ?r ?l)
+                )
+            )
+        )
+    :effect
+        (and
+            (checked ?r)
+        )
+)
+
+(:action examineObject
+    :parameters (?a - agent ?o - object)
+    :precondition
+        (or
+            ;(exists (?l - location)
+            ;    (and
+            ;        (atLocation ?a ?l)
+            ;        (objectAtLocation ?o ?l)
+            ;    )
+            ;)
+            (exists (?l - location, ?r - receptacle)
+                (and
+                    (atLocation ?a ?l)
+                    (receptacleAtLocation ?r ?l)
+                    ; (objectAtLocation ?o ?l)
+                    (inReceptacle ?o ?r)
+                    (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+              )
+            )
+            (holds ?a ?o)
+        )
+    :effect
+        (and
+            (checked ?o)
+        )
+)
+
+;; agent goes to receptacle
+ (:action GotoLocation
+    :parameters (?a - agent ?lStart - location ?lEnd - location ?r - receptacle)
+    :precondition (and
+                    (atLocation ?a ?lStart)
+                    (receptacleAtLocation ?r ?lEnd)
+                    ;(exists (?r - receptacle) (receptacleAtLocation ?r ?lEnd))
+                  )
+    :effect (and
+                (not (atLocation ?a ?lStart))
+                (atLocation ?a ?lEnd)
+                ; (forall (?r - receptacle)
+                ;     (when (and (receptacleAtLocation ?r ?lEnd)
+                ;                (or (not (openable ?r)) (opened ?r)))
+                ;         (checked ?r)
+                ;     )
+                ; )
+                ; (increase (total-cost) (distance ?lStart ?lEnd))
+                (increase (total-cost) 1)
+            )
+ )
+
+;; agent opens receptacle
+ (:action OpenObject
+    :parameters (?a - agent ?l - location ?r - receptacle)
+    :precondition (and
+            (openable ?r)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (not (opened ?r))
+            )
+    :effect (and
+                (opened ?r)
+                (checked ?r)
+                (increase (total-cost) 1)
+            )
+ )
+;; agent closes receptacle
+ (:action CloseObject
+    :parameters (?a - agent ?l - location ?r - receptacle)
+    :precondition (and
+            (openable ?r)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (opened ?r)
+            )
+    :effect (and
+                (not (opened ?r))
+                (increase (total-cost) 1)
+            )
+
+ )
+
+ ;; agent picks up object from a receptacle
+ (:action PickupObject
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition
+        (and
+            (pickupable ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            ; (objectAtLocation ?o ?l)
+            (inReceptacle ?o ?r)
+            (not (holdsAny ?a))  ; agent's hands are empty.
+            ;(not (holdsAnyReceptacleObject ?a))
+            (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+            ;(not (isReceptacleObject ?o))
+        )
+    :effect
+        (and
+            (not (inReceptacle ?o ?r))
+            (holds ?a ?o)
+            (holdsAny ?a)
+            (not (objectAtLocation ?o ?l))
+            ;(not (full ?r))
+            (increase (total-cost) 1)
+        )
+ )
+
+
+; ;; agent picks up object from a receptacle
+; (:action PickupObjectFromReceptacleObject
+;    :parameters (?a - agent ?l - location ?o - object ?outerR - object ?r - receptacle)
+;    :precondition
+;        (and
+;            (atLocation ?a ?l)
+;            (receptacleAtLocation ?r ?l)
+;            (inReceptacle ?o ?r)
+;            (pickupable ?o)
+;            (not (holdsAny ?a))  ; agent's hands are empty.
+;            (not (holdsAnyReceptacleObject ?a))
+;            (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+;            (not (isReceptacleObject ?o))
+;            (isReceptacleObject ?outerR)
+;            (inReceptacleObject ?o ?outerR)
+;        )
+;    :effect
+;        (and
+;            (not (inReceptacle ?o ?r))
+;            (holds ?a ?o)
+;            (holdsAny ?a)
+;            (not (objectAtLocation ?o ?l))
+;            (not (full ?r))
+;            (increase (total-cost) 1)
+;
+;            (not (inReceptacleObject ?o ?outerR))
+;            (not (isReceptacleObjectFull ?outerR))
+;        )
+; )
+;
+; ;; agent picks up object from a receptacle
+; (:action PickupEmptyReceptacleObject
+;    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+;    :precondition
+;        (and
+;            (atLocation ?a ?l)
+;            (receptacleAtLocation ?r ?l)
+;            ; (objectAtLocation ?o ?l)
+;            (inReceptacle ?o ?r)
+;            (pickupable ?o)
+;            (not (holdsAny ?a))  ; agent's hands are empty.
+;            (not (holdsAnyReceptacleObject ?a))
+;            (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+;            (isReceptacleObject ?o)
+;            (not (isReceptacleObjectFull ?o))
+;        )
+;    :effect
+;        (and
+;            (not (inReceptacle ?o ?r))
+;            (holds ?a ?o)
+;            (holdsAny ?a)
+;            (not (objectAtLocation ?o ?l))
+;            (not (full ?r))
+;            (increase (total-cost) 1)
+;            (holdsAnyReceptacleObject ?a)
+;        )
+; )
+;
+; ;; agent picks up object from a receptacle
+; (:action PickupFullReceptacleObject
+;    :parameters (?a - agent ?l - location ?o - object ?outerR - object ?r - receptacle)
+;    :precondition
+;        (and
+;            (atLocation ?a ?l)
+;            (receptacleAtLocation ?r ?l)
+;            (inReceptacle ?outerR ?r)
+;            (pickupable ?outerR)
+;            (not (holdsAny ?a))  ; agent's hands are empty.
+;            (not (holdsAnyReceptacleObject ?a))
+;            (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+;            (not (isReceptacleObject ?o))
+;            (isReceptacleObject ?outerR)
+;            (inReceptacleObject ?o ?outerR)
+;        )
+;    :effect
+;        (and
+;            (not (inReceptacle ?o ?r))
+;            (not (inReceptacle ?outerR ?r))
+;            (holds ?a ?outerR)
+;            (holdsAny ?a)
+;            (not (objectAtLocation ?o ?l))
+;            (not (objectAtLocation ?outerR ?l))
+;            (not (full ?r))
+;            (increase (total-cost) 1)
+;            (holdsAnyReceptacleObject ?a)
+;        )
+; )
+
+
+;; agent puts down an object
+ (:action PutObject
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle ?ot - otype ?rt - rtype)
+    :precondition (and
+            (holds ?a ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (or (not (openable ?r)) (opened ?r))    ; receptacle is opened if it is openable
+            ;(not (full ?r))
+            (objectType ?o ?ot)
+            (receptacleType ?r ?rt)
+            (canContain ?rt ?ot)
+            ;(not (holdsAnyReceptacleObject ?a))
+            )
+    :effect (and
+                (inReceptacle ?o ?r)
+                (objectAtLocation ?o ?l)
+                ;(full ?r)
+                (not (holds ?a ?o))
+                (not (holdsAny ?a))
+                (increase (total-cost) 1)
+            )
+ )
+
+;;; agent puts down an object
+; (:action PutObjectInReceptacleObject
+;    :parameters (?a - agent ?l - location ?ot - otype ?o - object ?outerO - object ?outerR - receptacle)
+;    :precondition (and
+;            (atLocation ?a ?l)
+;            (objectAtLocation ?outerO ?l)
+;            (isReceptacleObject ?outerO)
+;            (not (isReceptacleObject ?o))
+;            (objectType ?o ?ot)
+;            (holds ?a ?o)
+;            (not (holdsAnyReceptacleObject ?a))
+;            (inReceptacle ?outerO ?outerR)
+;            (not (isReceptacleObjectFull ?outerO))
+;            )
+;    :effect (and
+;                (inReceptacleObject ?o ?outerO)
+;                (inReceptacle ?o ?outerR)
+;                (not (holds ?a ?o))
+;                (not (holdsAny ?a))
+;                (objectAtLocation ?o ?l)
+;                (isReceptacleObjectFull ?outerO)
+;                (increase (total-cost) 1)
+;            )
+; )
+;
+;;; agent puts down an object
+; (:action PutEmptyReceptacleObjectinReceptacle
+;    :parameters (?a - agent ?l - location ?ot - otype ?o - object ?r - receptacle)
+;    :precondition (and
+;            (atLocation ?a ?l)
+;            (receptacleAtLocation ?r ?l)
+;            (or (not (openable ?r)) (opened ?r))    ; receptacle is opened if it is openable
+;            (not (full ?r))
+;            (objectType ?o ?ot)
+;            (holds ?a ?o)
+;            (holdsAnyReceptacleObject ?a)
+;            (isReceptacleObject ?o)
+;            (not (isReceptacleObjectFull ?o))
+;            )
+;    :effect (and
+;                (inReceptacle ?o ?r)
+;                (objectAtLocation ?o ?l)
+;                (full ?r)
+;                (not (holds ?a ?o))
+;                (not (holdsAny ?a))
+;                (not (holdsAnyReceptacleObject ?a))
+;                (increase (total-cost) 1)
+;            )
+; )
+;
+;;; agent puts down a receptacle object in a receptacle
+; (:action PutFullReceptacleObjectInReceptacle
+;    :parameters (?a - agent ?l - location ?ot - otype ?innerO - object ?outerO - object ?r - receptacle) ; ?rt - rtype)
+;    :precondition (and
+;            (atLocation ?a ?l)
+;            (receptacleAtLocation ?r ?l)
+;            (objectType ?outerO ?ot)
+;            (holds ?a ?outerO)
+;            (holdsAnyReceptacleObject ?a)
+;            (isReceptacleObject ?outerO)
+;            (isReceptacleObjectFull ?outerO)
+;            (inReceptacleObject ?innerO ?outerO)
+;            )
+;    :effect (and
+;                (not (holdsAny ?a))
+;                (not (holdsAnyReceptacleObject ?a))
+;                (objectAtLocation ?outerO ?l)
+;                (objectAtLocation ?innerO ?l)
+;                (inReceptacle ?outerO ?r)
+;                (inReceptacle ?innerO ?r)
+;                (not (holds ?a ?outerO))
+;                (increase (total-cost) 1)
+;            )
+; )
+
+;; agent cleans some object
+ (:action CleanObject
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (cleanable ?o)
+            (or
+                ;(receptacleType ?r SinkType)
+                (receptacleType ?r SinkBasinType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isClean ?o)
+            )
+ )
+
+
+;; agent heats-up some object
+ (:action HeatObject
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (heatable ?o)
+            (or
+                (receptacleType ?r MicrowaveType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isHot ?o)
+                (not (isCool ?o))
+            )
+ )
+
+;; agent cools some object
+ (:action CoolObject
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (coolable ?o)
+            (or
+                (receptacleType ?r FridgeType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isCool ?o)
+                (not (isHot ?o))
+            )
+ )
+
+
+;; agent toggle object
+ (:action ToggleObject
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition (and
+            (toggleable ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (inReceptacle ?o ?r)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (when (isOn ?o)
+                    (not (isOn ?o)))
+                (when (not (isOn ?o))
+                    (isOn ?o))
+                (isToggled ?o)
+            )
+ )
+
+
+;; agent slices some object with a knife
+ (:action SliceObject
+    :parameters (?a - agent ?l - location ?co - object ?ko - object)
+    :precondition
+            (and
+                (sliceable ?co)
+                (or
+                    (objectType ?ko KnifeType)
+                    (objectType ?ko ButterKnifeType)
+                )
+                (atLocation ?a ?l)
+                (objectAtLocation ?co ?l)
+                (holds ?a ?ko)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isSliced ?co)
+            )
+ )
+
+
+(:action help
+    :parameters (?a - agent)
+    :precondition
+        ()
+    :effect
+        (and
+            (checked ?a)
+        )
+)
+
+)
+
+
+
+====Step 0====
+
+----Larger Loop No. 0----
+successful_actions: []
+Small Loop, action_queue: []
+--First Generation--
+Prompt: Please provide the output in strict JSON format, without any additional text or explanation.
+The format MUST be exactly:
+{{
+  "df": "...",
+  "pf": "..."
+}}
+
+
+You are in a partially observable ALFWorld environment.
+
+You are provided with an initial PDDL domain file (seed). Do NOT discard it.
+Start from this seed and keep changes minimal unless required for solvability or consistency.
+
+Initial domain file (seed DF):
+;; Specification in PDDL of the Alfred domain
+;; Intended to be used with Fast Downward which supports PDDL 2.2 level 1 plus the :action-costs requirement from PDDL 3.1.
+
+(define (domain alfred)
+ (:requirements
+    :adl
+    :action-costs
+    :typing
+ )
+ (:types
+  agent
+  location
+  receptacle
+  object
+  rtype
+  otype
+  )
+
+
+ (:predicates
+    (atLocation ?a - agent ?l - location)                     ; true if the agent is at the location
+    (receptacleAtLocation ?r - receptacle ?l - location)      ; true if the receptacle is at the location (constant)
+    (objectAtLocation ?o - object ?l - location)              ; true if the object is at the location
+    (openable ?r - receptacle)                                ; true if a receptacle is openable
+    (opened ?r - receptacle)                                  ; true if a receptacle is opened
+    (inReceptacle ?o - object ?r - receptacle)                ; object ?o is in receptacle ?r
+    (isReceptacleObject ?o - object)                          ; true if the object can have things put inside it
+    (inReceptacleObject ?innerObject - object ?outerObject - object)                ; object ?innerObject is inside object ?outerObject
+    (isReceptacleObjectFull ?o - object)                      ; true if the receptacle object contains something
+    (wasInReceptacle ?o - object ?r - receptacle)             ; object ?o was or is in receptacle ?r now or some time in the past
+    (checked ?r - receptacle)                                 ; whether the receptacle has been looked inside/visited
+    (examined ?l - location)                                  ; TODO
+    (receptacleType ?r - receptacle ?t - rtype)               ; the type of receptacle (Cabinet vs Cabinet|01|2...)
+    (canContain ?rt - rtype ?ot - otype)                      ; true if receptacle can hold object
+    (objectType ?o - object ?t - otype)                       ; the type of object (Apple vs Apple|01|2...)
+    (holds ?a - agent ?o - object)                            ; object ?o is held by agent ?a
+    (holdsAny ?a - agent)                                     ; agent ?a holds an object
+    (holdsAnyReceptacleObject ?a - agent)                        ; agent ?a holds a receptacle object
+    (full ?r - receptacle)                                    ; true if the receptacle has no remaining space
+    (isClean ?o - object)                                     ; true if the object has been clean in sink
+    (cleanable ?o - object)                                   ; true if the object can be placed in a sink
+    (isHot ?o - object)                                       ; true if the object has been heated up
+    (heatable ?o - object)                                    ; true if the object can be heated up in a microwave
+    (isCool ?o - object)                                      ; true if the object has been cooled
+    (coolable ?o - object)                                    ; true if the object can be cooled in the fridge
+    (pickupable ?o - object)                                   ; true if the object can be picked up
+    (moveable ?o - object)                                      ; true if the object can be moved
+    (toggleable ?o - object)                                  ; true if the object can be turned on/off
+    (isOn ?o - object)                                        ; true if the object is on
+    (isToggled ?o - object)                                   ; true if the object has been toggled
+    (sliceable ?o - object)                                   ; true if the object can be sliced
+    (isSliced ?o - object)                                    ; true if the object is sliced
+ )
+
+  (:functions
+    (distance ?from ?to)
+    (total-cost) - number
+   )
+
+;; All actions are specified such that the final arguments are the ones used
+;; for performing actions in Unity.
+
+
+(:action look
+    :parameters (?a - agent ?l - location)
+    :precondition
+        (and
+            (atLocation ?a ?l)
+        )
+    :effect
+        (and
+            (checked ?l)
+        )
+)
+
+(:action inventory
+    :parameters (?a - agent)
+    :precondition
+        ()
+    :effect
+        (and
+            (checked ?a)
+        )
+)
+
+(:action examineReceptacle
+    :parameters (?a - agent ?r - receptacle)
+    :precondition
+        (and
+            (exists (?l - location)
+                (and
+                    (atLocation ?a ?l)
+                    (receptacleAtLocation ?r ?l)
+                )
+            )
+        )
+    :effect
+        (and
+            (checked ?r)
+        )
+)
+
+(:action examineObject
+    :parameters (?a - agent ?o - object)
+    :precondition
+        (or
+            ;(exists (?l - location)
+            ;    (and
+            ;        (atLocation ?a ?l)
+            ;        (objectAtLocation ?o ?l)
+            ;    )
+            ;)
+            (exists (?l - location, ?r - receptacle)
+                (and
+                    (atLocation ?a ?l)
+                    (receptacleAtLocation ?r ?l)
+                    ; (objectAtLocation ?o ?l)
+                    (inReceptacle ?o ?r)
+                    (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+              )
+            )
+            (holds ?a ?o)
+        )
+    :effect
+        (and
+            (checked ?o)
+        )
+)
+
+;; agent goes to receptacle
+ (:action GotoLocation
+    :parameters (?a - agent ?lStart - location ?lEnd - location ?r - receptacle)
+    :precondition (and
+                    (atLocation ?a ?lStart)
+                    (receptacleAtLocation ?r ?lEnd)
+                    ;(exists (?r - receptacle) (receptacleAtLocation ?r ?lEnd))
+                  )
+    :effect (and
+                (not (atLocation ?a ?lStart))
+                (atLocation ?a ?lEnd)
+                ; (forall (?r - receptacle)
+                ;     (when (and (receptacleAtLocation ?r ?lEnd)
+                ;                (or (not (openable ?r)) (opened ?r)))
+                ;         (checked ?r)
+                ;     )
+                ; )
+                ; (increase (total-cost) (distance ?lStart ?lEnd))
+                (increase (total-cost) 1)
+            )
+ )
+
+;; agent opens receptacle
+ (:action OpenObject
+    :parameters (?a - agent ?l - location ?r - receptacle)
+    :precondition (and
+            (openable ?r)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (not (opened ?r))
+            )
+    :effect (and
+                (opened ?r)
+                (checked ?r)
+                (increase (total-cost) 1)
+            )
+ )
+;; agent closes receptacle
+ (:action CloseObject
+    :parameters (?a - agent ?l - location ?r - receptacle)
+    :precondition (and
+            (openable ?r)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (opened ?r)
+            )
+    :effect (and
+                (not (opened ?r))
+                (increase (total-cost) 1)
+            )
+
+ )
+
+ ;; agent picks up object from a receptacle
+ (:action PickupObject
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition
+        (and
+            (pickupable ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            ; (objectAtLocation ?o ?l)
+            (inReceptacle ?o ?r)
+            (not (holdsAny ?a))  ; agent's hands are empty.
+            ;(not (holdsAnyReceptacleObject ?a))
+            (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+            ;(not (isReceptacleObject ?o))
+        )
+    :effect
+        (and
+            (not (inReceptacle ?o ?r))
+            (holds ?a ?o)
+            (holdsAny ?a)
+            (not (objectAtLocation ?o ?l))
+            ;(not (full ?r))
+            (increase (total-cost) 1)
+        )
+ )
+
+
+; ;; agent picks up object from a receptacle
+; (:action PickupObjectFromReceptacleObject
+;    :parameters (?a - agent ?l - location ?o - object ?outerR - object ?r - receptacle)
+;    :precondition
+;        (and
+;            (atLocation ?a ?l)
+;            (receptacleAtLocation ?r ?l)
+;            (inReceptacle ?o ?r)
+;            (pickupable ?o)
+;            (not (holdsAny ?a))  ; agent's hands are empty.
+;            (not (holdsAnyReceptacleObject ?a))
+;            (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+;            (not (isReceptacleObject ?o))
+;            (isReceptacleObject ?outerR)
+;            (inReceptacleObject ?o ?outerR)
+;        )
+;    :effect
+;        (and
+;            (not (inReceptacle ?o ?r))
+;            (holds ?a ?o)
+;            (holdsAny ?a)
+;            (not (objectAtLocation ?o ?l))
+;            (not (full ?r))
+;            (increase (total-cost) 1)
+;
+;            (not (inReceptacleObject ?o ?outerR))
+;            (not (isReceptacleObjectFull ?outerR))
+;        )
+; )
+;
+; ;; agent picks up object from a receptacle
+; (:action PickupEmptyReceptacleObject
+;    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+;    :precondition
+;        (and
+;            (atLocation ?a ?l)
+;            (receptacleAtLocation ?r ?l)
+;            ; (objectAtLocation ?o ?l)
+;            (inReceptacle ?o ?r)
+;            (pickupable ?o)
+;            (not (holdsAny ?a))  ; agent's hands are empty.
+;            (not (holdsAnyReceptacleObject ?a))
+;            (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+;            (isReceptacleObject ?o)
+;            (not (isReceptacleObjectFull ?o))
+;        )
+;    :effect
+;        (and
+;            (not (inReceptacle ?o ?r))
+;            (holds ?a ?o)
+;            (holdsAny ?a)
+;            (not (objectAtLocation ?o ?l))
+;            (not (full ?r))
+;            (increase (total-cost) 1)
+;            (holdsAnyReceptacleObject ?a)
+;        )
+; )
+;
+; ;; agent picks up object from a receptacle
+; (:action PickupFullReceptacleObject
+;    :parameters (?a - agent ?l - location ?o - object ?outerR - object ?r - receptacle)
+;    :precondition
+;        (and
+;            (atLocation ?a ?l)
+;            (receptacleAtLocation ?r ?l)
+;            (inReceptacle ?outerR ?r)
+;            (pickupable ?outerR)
+;            (not (holdsAny ?a))  ; agent's hands are empty.
+;            (not (holdsAnyReceptacleObject ?a))
+;            (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+;            (not (isReceptacleObject ?o))
+;            (isReceptacleObject ?outerR)
+;            (inReceptacleObject ?o ?outerR)
+;        )
+;    :effect
+;        (and
+;            (not (inReceptacle ?o ?r))
+;            (not (inReceptacle ?outerR ?r))
+;            (holds ?a ?outerR)
+;            (holdsAny ?a)
+;            (not (objectAtLocation ?o ?l))
+;            (not (objectAtLocation ?outerR ?l))
+;            (not (full ?r))
+;            (increase (total-cost) 1)
+;            (holdsAnyReceptacleObject ?a)
+;        )
+; )
+
+
+;; agent puts down an object
+ (:action PutObject
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle ?ot - otype ?rt - rtype)
+    :precondition (and
+            (holds ?a ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (or (not (openable ?r)) (opened ?r))    ; receptacle is opened if it is openable
+            ;(not (full ?r))
+            (objectType ?o ?ot)
+            (receptacleType ?r ?rt)
+            (canContain ?rt ?ot)
+            ;(not (holdsAnyReceptacleObject ?a))
+            )
+    :effect (and
+                (inReceptacle ?o ?r)
+                (objectAtLocation ?o ?l)
+                ;(full ?r)
+                (not (holds ?a ?o))
+                (not (holdsAny ?a))
+                (increase (total-cost) 1)
+            )
+ )
+
+;;; agent puts down an object
+; (:action PutObjectInReceptacleObject
+;    :parameters (?a - agent ?l - location ?ot - otype ?o - object ?outerO - object ?outerR - receptacle)
+;    :precondition (and
+;            (atLocation ?a ?l)
+;            (objectAtLocation ?outerO ?l)
+;            (isReceptacleObject ?outerO)
+;            (not (isReceptacleObject ?o))
+;            (objectType ?o ?ot)
+;            (holds ?a ?o)
+;            (not (holdsAnyReceptacleObject ?a))
+;            (inReceptacle ?outerO ?outerR)
+;            (not (isReceptacleObjectFull ?outerO))
+;            )
+;    :effect (and
+;                (inReceptacleObject ?o ?outerO)
+;                (inReceptacle ?o ?outerR)
+;                (not (holds ?a ?o))
+;                (not (holdsAny ?a))
+;                (objectAtLocation ?o ?l)
+;                (isReceptacleObjectFull ?outerO)
+;                (increase (total-cost) 1)
+;            )
+; )
+;
+;;; agent puts down an object
+; (:action PutEmptyReceptacleObjectinReceptacle
+;    :parameters (?a - agent ?l - location ?ot - otype ?o - object ?r - receptacle)
+;    :precondition (and
+;            (atLocation ?a ?l)
+;            (receptacleAtLocation ?r ?l)
+;            (or (not (openable ?r)) (opened ?r))    ; receptacle is opened if it is openable
+;            (not (full ?r))
+;            (objectType ?o ?ot)
+;            (holds ?a ?o)
+;            (holdsAnyReceptacleObject ?a)
+;            (isReceptacleObject ?o)
+;            (not (isReceptacleObjectFull ?o))
+;            )
+;    :effect (and
+;                (inReceptacle ?o ?r)
+;                (objectAtLocation ?o ?l)
+;                (full ?r)
+;                (not (holds ?a ?o))
+;                (not (holdsAny ?a))
+;                (not (holdsAnyReceptacleObject ?a))
+;                (increase (total-cost) 1)
+;            )
+; )
+;
+;;; agent puts down a receptacle object in a receptacle
+; (:action PutFullReceptacleObjectInReceptacle
+;    :parameters (?a - agent ?l - location ?ot - otype ?innerO - object ?outerO - object ?r - receptacle) ; ?rt - rtype)
+;    :precondition (and
+;            (atLocation ?a ?l)
+;            (receptacleAtLocation ?r ?l)
+;            (objectType ?outerO ?ot)
+;            (holds ?a ?outerO)
+;            (holdsAnyReceptacleObject ?a)
+;            (isReceptacleObject ?outerO)
+;            (isReceptacleObjectFull ?outerO)
+;            (inReceptacleObject ?innerO ?outerO)
+;            )
+;    :effect (and
+;                (not (holdsAny ?a))
+;                (not (holdsAnyReceptacleObject ?a))
+;                (objectAtLocation ?outerO ?l)
+;                (objectAtLocation ?innerO ?l)
+;                (inReceptacle ?outerO ?r)
+;                (inReceptacle ?innerO ?r)
+;                (not (holds ?a ?outerO))
+;                (increase (total-cost) 1)
+;            )
+; )
+
+;; agent cleans some object
+ (:action CleanObject
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (cleanable ?o)
+            (or
+                ;(receptacleType ?r SinkType)
+                (receptacleType ?r SinkBasinType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isClean ?o)
+            )
+ )
+
+
+;; agent heats-up some object
+ (:action HeatObject
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (heatable ?o)
+            (or
+                (receptacleType ?r MicrowaveType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isHot ?o)
+                (not (isCool ?o))
+            )
+ )
+
+;; agent cools some object
+ (:action CoolObject
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (coolable ?o)
+            (or
+                (receptacleType ?r FridgeType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isCool ?o)
+                (not (isHot ?o))
+            )
+ )
+
+
+;; agent toggle object
+ (:action ToggleObject
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition (and
+            (toggleable ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (inReceptacle ?o ?r)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (when (isOn ?o)
+                    (not (isOn ?o)))
+                (when (not (isOn ?o))
+                    (isOn ?o))
+                (isToggled ?o)
+            )
+ )
+
+
+;; agent slices some object with a knife
+ (:action SliceObject
+    :parameters (?a - agent ?l - location ?co - object ?ko - object)
+    :precondition
+            (and
+                (sliceable ?co)
+                (or
+                    (objectType ?ko KnifeType)
+                    (objectType ?ko ButterKnifeType)
+                )
+                (atLocation ?a ?l)
+                (objectAtLocation ?co ?l)
+                (holds ?a ?ko)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isSliced ?co)
+            )
+ )
+
+
+(:action help
+    :parameters (?a - agent)
+    :precondition
+        ()
+    :effect
+        (and
+            (checked ?a)
+        )
+)
+
+)
+
+
+Task goal:
+Your task is to: heat some sliced apple and put it in garbagecan.
+
+Latest observation summary:
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+Valid actions:
+['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to cabinet 5', 'go to cabinet 6', 'go to coffeemachine 1', 'go to countertop 1', 'go to countertop 2', 'go to countertop 3', 'go to drawer 1', 'go to drawer 2', 'go to drawer 3', 'go to fridge 1', 'go to garbagecan 1', 'go to microwave 1', 'go to shelf 1', 'go to shelf 2', 'go to shelf 3', 'go to sinkbasin 1', 'go to stoveburner 1', 'go to stoveburner 2', 'go to stoveburner 3', 'go to stoveburner 4', 'go to toaster 1']
+
+Your DF MUST define actions with these exact names (case-insensitive is okay, but keep spelling):
+
+1) GOTOLOCATION
+   - effect should update where the agent is
+
+2) OPENOBJECT
+   - for openable receptacles
+
+3) PICKUPOBJECT
+   - take an object from a receptacle
+
+4) PUTOBJECT
+   - put/move an object to a receptacle
+
+5) USEOBJECT
+   - use an object (e.g., a lamp)
+
+6) HEATOBJECT
+7) CLEANOBJECT
+8) COOLOBJECT
+9) SLICEOBJECT
+
+Keep DF compact. Use typing and a minimal set of predicates such as:
+  (at ?a ?r), (open ?r), (in ?o ?r), (holding ?a ?o), (heated ?o), (clean ?o), (cooled ?o), (sliced ?o)
+
+PF should contain ONLY grounded objects and facts that are supported by observations.
+
+Output updated DF and a PF consistent with the observations.
+
+Generated df and pf:
+(define (domain alfred)
+ (:requirements
+    :adl
+    :action-costs
+    :typing
+ )
+ (:types
+  agent
+  location
+  receptacle
+  object
+  rtype
+  otype
+  )
+
+
+ (:predicates
+    (atLocation ?a - agent ?l - location)                     ; true if the agent is at the location
+    (receptacleAtLocation ?r - receptacle ?l - location)      ; true if the receptacle is at the location (constant)
+    (objectAtLocation ?o - object ?l - location)              ; true if the object is at the location
+    (openable ?r - receptacle)                                ; true if a receptacle is openable
+    (opened ?r - receptacle)                                  ; true if a receptacle is opened
+    (inReceptacle ?o - object ?r - receptacle)                ; object ?o is in receptacle ?r
+    (isReceptacleObject ?o - object)                          ; true if the object can have things put inside it
+    (inReceptacleObject ?innerObject - object ?outerObject - object)                ; object ?innerObject is inside object ?outerObject
+    (isReceptacleObjectFull ?o - object)                      ; true if the receptacle object contains something
+    (wasInReceptacle ?o - object ?r - receptacle)             ; object ?o was or is in receptacle ?r now or some time in the past
+    (checked ?r - receptacle)                                 ; whether the receptacle has been looked inside/visited
+    (examined ?l - location)                                  ; TODO
+    (receptacleType ?r - receptacle ?t - rtype)               ; the type of receptacle (Cabinet vs Cabinet|01|2...)
+    (canContain ?rt - rtype ?ot - otype)                      ; true if receptacle can hold object
+    (objectType ?o - object ?t - otype)                       ; the type of object (Apple vs Apple|01|2...)
+    (holds ?a - agent ?o - object)                            ; object ?o is held by agent ?a
+    (holdsAny ?a - agent)                                     ; agent ?a holds an object
+    (holdsAnyReceptacleObject ?a - agent)                        ; agent ?a holds a receptacle object
+    (full ?r - receptacle)                                    ; true if the receptacle has no remaining space
+    (isClean ?o - object)                                     ; true if the object has been clean in sink
+    (cleanable ?o - object)                                   ; true if the object can be placed in a sink
+    (isHot ?o - object)                                       ; true if the object has been heated up
+    (heatable ?o - object)                                    ; true if the object can be heated up in a microwave
+    (isCool ?o - object)                                      ; true if the object has been cooled
+    (coolable ?o - object)                                    ; true if the object can be cooled in the fridge
+    (pickupable ?o - object)                                   ; true if the object can be picked up
+    (moveable ?o - object)                                      ; true if the object can be moved
+    (toggleable ?o - object)                                  ; true if the object can be turned on/off
+    (isOn ?o - object)                                        ; true if the object is on
+    (isToggled ?o - object)                                   ; true if the object has been toggled
+    (sliceable ?o - object)                                   ; true if the object can be sliced
+    (isSliced ?o - object)                                    ; true if the object is sliced
+ )
+
+  (:functions
+    (distance ?from ?to)
+    (total-cost) - number
+   )
+
+(:action look
+    :parameters (?a - agent ?l - location)
+    :precondition
+        (and
+            (atLocation ?a ?l)
+        )
+    :effect
+        (and
+            (checked ?l)
+        )
+)
+
+(:action inventory
+    :parameters (?a - agent)
+    :precondition
+        ()
+    :effect
+        (and
+            (checked ?a)
+        )
+)
+
+(:action examineReceptacle
+    :parameters (?a - agent ?r - receptacle)
+    :precondition
+        (and
+            (exists (?l - location)
+                (and
+                    (atLocation ?a ?l)
+                    (receptacleAtLocation ?r ?l)
+                )
+            )
+        )
+    :effect
+        (and
+            (checked ?r)
+        )
+)
+
+(:action examineObject
+    :parameters (?a - agent ?o - object)
+    :precondition
+        (or
+            (exists (?l - location, ?r - receptacle)
+                (and
+                    (atLocation ?a ?l)
+                    (receptacleAtLocation ?r ?l)
+                    (inReceptacle ?o ?r)
+                    (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+              )
+            )
+            (holds ?a ?o)
+        )
+    :effect
+        (and
+            (checked ?o)
+        )
+)
+
+;; agent goes to receptacle
+ (:action GOTOLOCATION
+    :parameters (?a - agent ?lStart - location ?lEnd - location ?r - receptacle)
+    :precondition (and
+                    (atLocation ?a ?lStart)
+                    (receptacleAtLocation ?r ?lEnd)
+                  )
+    :effect (and
+                (not (atLocation ?a ?lStart))
+                (atLocation ?a ?lEnd)
+                (increase (total-cost) 1)
+            )
+ )
+
+;; agent opens receptacle
+ (:action OPENOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle)
+    :precondition (and
+            (openable ?r)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (not (opened ?r))
+            )
+    :effect (and
+                (opened ?r)
+                (checked ?r)
+                (increase (total-cost) 1)
+            )
+ )
+;; agent closes receptacle
+ (:action CloseObject
+    :parameters (?a - agent ?l - location ?r - receptacle)
+    :precondition (and
+            (openable ?r)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (opened ?r)
+            )
+    :effect (and
+                (not (opened ?r))
+                (increase (total-cost) 1)
+            )
+
+ )
+
+ ;; agent picks up object from a receptacle
+ (:action PICKUPOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition
+        (and
+            (pickupable ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (inReceptacle ?o ?r)
+            (not (holdsAny ?a))  ; agent's hands are empty.
+            (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+        )
+    :effect
+        (and
+            (not (inReceptacle ?o ?r))
+            (holds ?a ?o)
+            (holdsAny ?a)
+            (not (objectAtLocation ?o ?l))
+            (increase (total-cost) 1)
+        )
+ )
+
+;; agent puts down an object
+ (:action PUTOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle ?ot - otype ?rt - rtype)
+    :precondition (and
+            (holds ?a ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (or (not (openable ?r)) (opened ?r))    ; receptacle is opened if it is openable
+            (objectType ?o ?ot)
+            (receptacleType ?r ?rt)
+            (canContain ?rt ?ot)
+            )
+    :effect (and
+                (inReceptacle ?o ?r)
+                (objectAtLocation ?o ?l)
+                (not (holds ?a ?o))
+                (not (holdsAny ?a))
+                (increase (total-cost) 1)
+            )
+ )
+
+;; agent cleans some object
+ (:action CLEANOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (cleanable ?o)
+            (or
+                (receptacleType ?r SinkBasinType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isClean ?o)
+            )
+ )
+
+
+;; agent heats-up some object
+ (:action HEATOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (heatable ?o)
+            (or
+                (receptacleType ?r MicrowaveType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isHot ?o)
+                (not (isCool ?o))
+            )
+ )
+
+;; agent cools some object
+ (:action COOLOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (coolable ?o)
+            (or
+                (receptacleType ?r FridgeType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isCool ?o)
+                (not (isHot ?o))
+            )
+ )
+
+
+;; agent use object (e.g., toggle)
+ (:action USEOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition (and
+            (toggleable ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (inReceptacle ?o ?r)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (when (isOn ?o)
+                    (not (isOn ?o)))
+                (when (not (isOn ?o))
+                    (isOn ?o))
+                (isToggled ?o)
+            )
+ )
+
+
+;; agent slices some object with a knife
+ (:action SLICEOBJECT
+    :parameters (?a - agent ?l - location ?co - object ?ko - object)
+    :precondition
+            (and
+                (sliceable ?co)
+                (or
+                    (objectType ?ko KnifeType)
+                    (objectType ?ko ButterKnifeType)
+                )
+                (atLocation ?a ?l)
+                (objectAtLocation ?co ?l)
+                (holds ?a ?ko)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isSliced ?co)
+            )
+ )
+
+(:action help
+    :parameters (?a - agent)
+    :precondition
+        ()
+    :effect
+        (and
+            (checked ?a)
+        )
+)
+
+)
+(define (problem alfred-problem)
+ (:domain alfred)
+ (:objects
+   agent1 - agent
+   loc_room - location
+   apple1 - object
+   cabinet_1 cabinet_2 cabinet_3 cabinet_4 cabinet_5 cabinet_6 - receptacle
+   coffeemachine_1 - receptacle
+   countertop_1 countertop_2 countertop_3 - receptacle
+   drawer_1 drawer_2 drawer_3 - receptacle
+   fridge_1 - receptacle
+   garbagecan_1 - receptacle
+   microwave_1 - receptacle
+   shelf_1 shelf_2 shelf_3 - receptacle
+   sinkbasin_1 - receptacle
+   stoveburner_1 stoveburner_2 stoveburner_3 stoveburner_4 - receptacle
+   toaster_1 - receptacle
+   CabinetType CoffeemachineType CountertopType DrawerType FridgeType GarbagecanType MicrowaveType ShelfType SinkbasinType StoveburnerType ToasterType - rtype
+   AppleType - otype
+ )
+ (:init
+   (atLocation agent1 loc_room)
+   (receptacleAtLocation cabinet_1 loc_room)
+   (receptacleAtLocation cabinet_2 loc_room)
+   (receptacleAtLocation cabinet_3 loc_room)
+   (receptacleAtLocation cabinet_4 loc_room)
+   (receptacleAtLocation cabinet_5 loc_room)
+   (receptacleAtLocation cabinet_6 loc_room)
+   (receptacleAtLocation coffeemachine_1 loc_room)
+   (receptacleAtLocation countertop_1 loc_room)
+   (receptacleAtLocation countertop_2 loc_room)
+   (receptacleAtLocation countertop_3 loc_room)
+   (receptacleAtLocation drawer_1 loc_room)
+   (receptacleAtLocation drawer_2 loc_room)
+   (receptacleAtLocation drawer_3 loc_room)
+   (receptacleAtLocation fridge_1 loc_room)
+   (receptacleAtLocation garbagecan_1 loc_room)
+   (receptacleAtLocation microwave_1 loc_room)
+   (receptacleAtLocation shelf_1 loc_room)
+   (receptacleAtLocation shelf_2 loc_room)
+   (receptacleAtLocation shelf_3 loc_room)
+   (receptacleAtLocation sinkbasin_1 loc_room)
+   (receptacleAtLocation stoveburner_1 loc_room)
+   (receptacleAtLocation stoveburner_2 loc_room)
+   (receptacleAtLocation stoveburner_3 loc_room)
+   (receptacleAtLocation stoveburner_4 loc_room)
+   (receptacleAtLocation toaster_1 loc_room)
+   (inReceptacle apple1 fridge_1)
+   (objectAtLocation apple1 loc_room)
+   (objectType apple1 AppleType)
+   (receptacleType cabinet_1 CabinetType)
+   (receptacleType cabinet_2 CabinetType)
+   (receptacleType cabinet_3 CabinetType)
+   (receptacleType cabinet_4 CabinetType)
+   (receptacleType cabinet_5 CabinetType)
+   (receptacleType cabinet_6 CabinetType)
+   (receptacleType coffeemachine_1 CoffeemachineType)
+   (receptacleType countertop_1 CountertopType)
+   (receptacleType countertop_2 CountertopType)
+   (receptacleType countertop_3 CountertopType)
+   (receptacleType drawer_1 DrawerType)
+   (receptacleType drawer_2 DrawerType)
+   (receptacleType drawer_3 DrawerType)
+   (receptacleType fridge_1 FridgeType)
+   (receptacleType garbagecan_1 GarbagecanType)
+   (receptacleType microwave_1 MicrowaveType)
+   (receptacleType shelf_1 ShelfType)
+   (receptacleType shelf_2 ShelfType)
+   (receptacleType shelf_3 ShelfType)
+   (receptacleType sinkbasin_1 SinkbasinType)
+   (receptacleType stoveburner_1 StoveburnerType)
+   (receptacleType stoveburner_2 StoveburnerType)
+   (receptacleType stoveburner_3 StoveburnerType)
+   (receptacleType stoveburner_4 StoveburnerType)
+   (receptacleType toaster_1 ToasterType)
+   (canContain MicrowaveType AppleType)
+   (canContain GarbagecanType AppleType)
+   (canContain FridgeType AppleType)
+   (pickupable apple1)
+   (sliceable apple1)
+   (heatable apple1)
+   (openable cabinet_1)
+   (openable cabinet_2)
+   (openable cabinet_3)
+   (openable cabinet_4)
+   (openable cabinet_5)
+   (openable cabinet_6)
+   (openable drawer_1)
+   (openable drawer_2)
+   (openable drawer_3)
+   (openable fridge_1)
+   (not (opened cabinet_1))
+   (not (opened cabinet_2))
+   (not (opened cabinet_3))
+   (not (opened cabinet_4))
+   (not (opened cabinet_5))
+   (not (opened cabinet_6))
+   (not (opened drawer_1))
+   (not (opened drawer_2))
+   (not (opened drawer_3))
+   (not (opened fridge_1))
+   (not (holdsAny agent1))
+   (not (isHot apple1))
+   (not (isSliced apple1))
+   (not (isClean apple1))
+   (not (isCool apple1))
+   (not (isOn apple1))
+   (not (isToggled apple1))
+   (= (total-cost) 0)
+ )
+ (:goal (and (isHot apple1) (isSliced apple1) (inReceptacle apple1 garbagecan_1)))
+)
+
+Actions from solver(df, pf): None
+Raw plan text: 
+--Small Loop--: 1
+Prompt: Please provide the output in strict JSON format, without any additional text or explanation.
+The format MUST be exactly:
+{{
+  "df": "...",
+  "pf": "..."
+}}
+
+
+You are in a partially observable ALFWorld environment.
+You must build/update a PDDL domain file (df) and problem file (pf) from ONLY the observations you have seen.
+
+Task goal (natural language):
+Your task is to: heat some sliced apple and put it in garbagecan.
+
+Latest observation summary:
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+Valid actions you are currently allowed to take:
+['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to cabinet 5', 'go to cabinet 6', 'go to coffeemachine 1', 'go to countertop 1', 'go to countertop 2', 'go to countertop 3', 'go to drawer 1', 'go to drawer 2', 'go to drawer 3', 'go to fridge 1', 'go to garbagecan 1', 'go to microwave 1', 'go to shelf 1', 'go to shelf 2', 'go to shelf 3', 'go to sinkbasin 1', 'go to stoveburner 1', 'go to stoveburner 2', 'go to stoveburner 3', 'go to stoveburner 4', 'go to toaster 1']
+
+Your DF MUST define actions with these exact names (case-insensitive is okay, but keep spelling):
+
+1) GOTOLOCATION
+   - effect should update where the agent is
+
+2) OPENOBJECT
+   - for openable receptacles
+
+3) PICKUPOBJECT
+   - take an object from a receptacle
+
+4) PUTOBJECT
+   - put/move an object to a receptacle
+
+5) USEOBJECT
+   - use an object (e.g., a lamp)
+
+6) HEATOBJECT
+7) CLEANOBJECT
+8) COOLOBJECT
+9) SLICEOBJECT
+
+Keep DF compact. Use typing and a minimal set of predicates such as:
+  (at ?a ?r), (open ?r), (in ?o ?r), (holding ?a ?o), (heated ?o), (clean ?o), (cooled ?o), (sliced ?o)
+
+PF should contain ONLY grounded objects and facts that are supported by observations.
+
+Guidelines:
+- Do NOT invent objects or receptacles that were not observed.
+- If the task requires finding an object, your near-term goal can be "be at" an unvisited receptacle.
+- PF goal MUST be grounded (no variables, no quantifiers).
+- PF init should not use "(not ...)" unless strictly necessary.
+
+
+
+This is all the memory you have in this game (each action and its corresponding observation):
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+This is the previous domain file (df):
+(define (domain alfred)
+ (:requirements
+    :adl
+    :action-costs
+    :typing
+ )
+ (:types
+  agent
+  location
+  receptacle
+  object
+  rtype
+  otype
+  )
+
+
+ (:predicates
+    (atLocation ?a - agent ?l - location)                     ; true if the agent is at the location
+    (receptacleAtLocation ?r - receptacle ?l - location)      ; true if the receptacle is at the location (constant)
+    (objectAtLocation ?o - object ?l - location)              ; true if the object is at the location
+    (openable ?r - receptacle)                                ; true if a receptacle is openable
+    (opened ?r - receptacle)                                  ; true if a receptacle is opened
+    (inReceptacle ?o - object ?r - receptacle)                ; object ?o is in receptacle ?r
+    (isReceptacleObject ?o - object)                          ; true if the object can have things put inside it
+    (inReceptacleObject ?innerObject - object ?outerObject - object)                ; object ?innerObject is inside object ?outerObject
+    (isReceptacleObjectFull ?o - object)                      ; true if the receptacle object contains something
+    (wasInReceptacle ?o - object ?r - receptacle)             ; object ?o was or is in receptacle ?r now or some time in the past
+    (checked ?r - receptacle)                                 ; whether the receptacle has been looked inside/visited
+    (examined ?l - location)                                  ; TODO
+    (receptacleType ?r - receptacle ?t - rtype)               ; the type of receptacle (Cabinet vs Cabinet|01|2...)
+    (canContain ?rt - rtype ?ot - otype)                      ; true if receptacle can hold object
+    (objectType ?o - object ?t - otype)                       ; the type of object (Apple vs Apple|01|2...)
+    (holds ?a - agent ?o - object)                            ; object ?o is held by agent ?a
+    (holdsAny ?a - agent)                                     ; agent ?a holds an object
+    (holdsAnyReceptacleObject ?a - agent)                        ; agent ?a holds a receptacle object
+    (full ?r - receptacle)                                    ; true if the receptacle has no remaining space
+    (isClean ?o - object)                                     ; true if the object has been clean in sink
+    (cleanable ?o - object)                                   ; true if the object can be placed in a sink
+    (isHot ?o - object)                                       ; true if the object has been heated up
+    (heatable ?o - object)                                    ; true if the object can be heated up in a microwave
+    (isCool ?o - object)                                      ; true if the object has been cooled
+    (coolable ?o - object)                                    ; true if the object can be cooled in the fridge
+    (pickupable ?o - object)                                   ; true if the object can be picked up
+    (moveable ?o - object)                                      ; true if the object can be moved
+    (toggleable ?o - object)                                  ; true if the object can be turned on/off
+    (isOn ?o - object)                                        ; true if the object is on
+    (isToggled ?o - object)                                   ; true if the object has been toggled
+    (sliceable ?o - object)                                   ; true if the object can be sliced
+    (isSliced ?o - object)                                    ; true if the object is sliced
+ )
+
+  (:functions
+    (distance ?from ?to)
+    (total-cost) - number
+   )
+
+(:action look
+    :parameters (?a - agent ?l - location)
+    :precondition
+        (and
+            (atLocation ?a ?l)
+        )
+    :effect
+        (and
+            (checked ?l)
+        )
+)
+
+(:action inventory
+    :parameters (?a - agent)
+    :precondition
+        ()
+    :effect
+        (and
+            (checked ?a)
+        )
+)
+
+(:action examineReceptacle
+    :parameters (?a - agent ?r - receptacle)
+    :precondition
+        (and
+            (exists (?l - location)
+                (and
+                    (atLocation ?a ?l)
+                    (receptacleAtLocation ?r ?l)
+                )
+            )
+        )
+    :effect
+        (and
+            (checked ?r)
+        )
+)
+
+(:action examineObject
+    :parameters (?a - agent ?o - object)
+    :precondition
+        (or
+            (exists (?l - location, ?r - receptacle)
+                (and
+                    (atLocation ?a ?l)
+                    (receptacleAtLocation ?r ?l)
+                    (inReceptacle ?o ?r)
+                    (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+              )
+            )
+            (holds ?a ?o)
+        )
+    :effect
+        (and
+            (checked ?o)
+        )
+)
+
+;; agent goes to receptacle
+ (:action GOTOLOCATION
+    :parameters (?a - agent ?lStart - location ?lEnd - location ?r - receptacle)
+    :precondition (and
+                    (atLocation ?a ?lStart)
+                    (receptacleAtLocation ?r ?lEnd)
+                  )
+    :effect (and
+                (not (atLocation ?a ?lStart))
+                (atLocation ?a ?lEnd)
+                (increase (total-cost) 1)
+            )
+ )
+
+;; agent opens receptacle
+ (:action OPENOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle)
+    :precondition (and
+            (openable ?r)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (not (opened ?r))
+            )
+    :effect (and
+                (opened ?r)
+                (checked ?r)
+                (increase (total-cost) 1)
+            )
+ )
+;; agent closes receptacle
+ (:action CloseObject
+    :parameters (?a - agent ?l - location ?r - receptacle)
+    :precondition (and
+            (openable ?r)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (opened ?r)
+            )
+    :effect (and
+                (not (opened ?r))
+                (increase (total-cost) 1)
+            )
+
+ )
+
+ ;; agent picks up object from a receptacle
+ (:action PICKUPOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition
+        (and
+            (pickupable ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (inReceptacle ?o ?r)
+            (not (holdsAny ?a))  ; agent's hands are empty.
+            (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+        )
+    :effect
+        (and
+            (not (inReceptacle ?o ?r))
+            (holds ?a ?o)
+            (holdsAny ?a)
+            (not (objectAtLocation ?o ?l))
+            (increase (total-cost) 1)
+        )
+ )
+
+;; agent puts down an object
+ (:action PUTOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle ?ot - otype ?rt - rtype)
+    :precondition (and
+            (holds ?a ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (or (not (openable ?r)) (opened ?r))    ; receptacle is opened if it is openable
+            (objectType ?o ?ot)
+            (receptacleType ?r ?rt)
+            (canContain ?rt ?ot)
+            )
+    :effect (and
+                (inReceptacle ?o ?r)
+                (objectAtLocation ?o ?l)
+                (not (holds ?a ?o))
+                (not (holdsAny ?a))
+                (increase (total-cost) 1)
+            )
+ )
+
+;; agent cleans some object
+ (:action CLEANOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (cleanable ?o)
+            (or
+                (receptacleType ?r SinkBasinType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isClean ?o)
+            )
+ )
+
+
+;; agent heats-up some object
+ (:action HEATOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (heatable ?o)
+            (or
+                (receptacleType ?r MicrowaveType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isHot ?o)
+                (not (isCool ?o))
+            )
+ )
+
+;; agent cools some object
+ (:action COOLOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (coolable ?o)
+            (or
+                (receptacleType ?r FridgeType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isCool ?o)
+                (not (isHot ?o))
+            )
+ )
+
+
+;; agent use object (e.g., toggle)
+ (:action USEOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition (and
+            (toggleable ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (inReceptacle ?o ?r)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (when (isOn ?o)
+                    (not (isOn ?o)))
+                (when (not (isOn ?o))
+                    (isOn ?o))
+                (isToggled ?o)
+            )
+ )
+
+
+;; agent slices some object with a knife
+ (:action SLICEOBJECT
+    :parameters (?a - agent ?l - location ?co - object ?ko - object)
+    :precondition
+            (and
+                (sliceable ?co)
+                (or
+                    (objectType ?ko KnifeType)
+                    (objectType ?ko ButterKnifeType)
+                )
+                (atLocation ?a ?l)
+                (objectAtLocation ?co ?l)
+                (holds ?a ?ko)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isSliced ?co)
+            )
+ )
+
+(:action help
+    :parameters (?a - agent)
+    :precondition
+        ()
+    :effect
+        (and
+            (checked ?a)
+        )
+)
+
+)
+
+This is the previous problem file (pf):
+(define (problem alfred-problem)
+ (:domain alfred)
+ (:objects
+   agent1 - agent
+   loc_room - location
+   apple1 - object
+   cabinet_1 cabinet_2 cabinet_3 cabinet_4 cabinet_5 cabinet_6 - receptacle
+   coffeemachine_1 - receptacle
+   countertop_1 countertop_2 countertop_3 - receptacle
+   drawer_1 drawer_2 drawer_3 - receptacle
+   fridge_1 - receptacle
+   garbagecan_1 - receptacle
+   microwave_1 - receptacle
+   shelf_1 shelf_2 shelf_3 - receptacle
+   sinkbasin_1 - receptacle
+   stoveburner_1 stoveburner_2 stoveburner_3 stoveburner_4 - receptacle
+   toaster_1 - receptacle
+   CabinetType CoffeemachineType CountertopType DrawerType FridgeType GarbagecanType MicrowaveType ShelfType SinkbasinType StoveburnerType ToasterType - rtype
+   AppleType - otype
+ )
+ (:init
+   (atLocation agent1 loc_room)
+   (receptacleAtLocation cabinet_1 loc_room)
+   (receptacleAtLocation cabinet_2 loc_room)
+   (receptacleAtLocation cabinet_3 loc_room)
+   (receptacleAtLocation cabinet_4 loc_room)
+   (receptacleAtLocation cabinet_5 loc_room)
+   (receptacleAtLocation cabinet_6 loc_room)
+   (receptacleAtLocation coffeemachine_1 loc_room)
+   (receptacleAtLocation countertop_1 loc_room)
+   (receptacleAtLocation countertop_2 loc_room)
+   (receptacleAtLocation countertop_3 loc_room)
+   (receptacleAtLocation drawer_1 loc_room)
+   (receptacleAtLocation drawer_2 loc_room)
+   (receptacleAtLocation drawer_3 loc_room)
+   (receptacleAtLocation fridge_1 loc_room)
+   (receptacleAtLocation garbagecan_1 loc_room)
+   (receptacleAtLocation microwave_1 loc_room)
+   (receptacleAtLocation shelf_1 loc_room)
+   (receptacleAtLocation shelf_2 loc_room)
+   (receptacleAtLocation shelf_3 loc_room)
+   (receptacleAtLocation sinkbasin_1 loc_room)
+   (receptacleAtLocation stoveburner_1 loc_room)
+   (receptacleAtLocation stoveburner_2 loc_room)
+   (receptacleAtLocation stoveburner_3 loc_room)
+   (receptacleAtLocation stoveburner_4 loc_room)
+   (receptacleAtLocation toaster_1 loc_room)
+   (inReceptacle apple1 fridge_1)
+   (objectAtLocation apple1 loc_room)
+   (objectType apple1 AppleType)
+   (receptacleType cabinet_1 CabinetType)
+   (receptacleType cabinet_2 CabinetType)
+   (receptacleType cabinet_3 CabinetType)
+   (receptacleType cabinet_4 CabinetType)
+   (receptacleType cabinet_5 CabinetType)
+   (receptacleType cabinet_6 CabinetType)
+   (receptacleType coffeemachine_1 CoffeemachineType)
+   (receptacleType countertop_1 CountertopType)
+   (receptacleType countertop_2 CountertopType)
+   (receptacleType countertop_3 CountertopType)
+   (receptacleType drawer_1 DrawerType)
+   (receptacleType drawer_2 DrawerType)
+   (receptacleType drawer_3 DrawerType)
+   (receptacleType fridge_1 FridgeType)
+   (receptacleType garbagecan_1 GarbagecanType)
+   (receptacleType microwave_1 MicrowaveType)
+   (receptacleType shelf_1 ShelfType)
+   (receptacleType shelf_2 ShelfType)
+   (receptacleType shelf_3 ShelfType)
+   (receptacleType sinkbasin_1 SinkbasinType)
+   (receptacleType stoveburner_1 StoveburnerType)
+   (receptacleType stoveburner_2 StoveburnerType)
+   (receptacleType stoveburner_3 StoveburnerType)
+   (receptacleType stoveburner_4 StoveburnerType)
+   (receptacleType toaster_1 ToasterType)
+   (canContain MicrowaveType AppleType)
+   (canContain GarbagecanType AppleType)
+   (canContain FridgeType AppleType)
+   (pickupable apple1)
+   (sliceable apple1)
+   (heatable apple1)
+   (openable cabinet_1)
+   (openable cabinet_2)
+   (openable cabinet_3)
+   (openable cabinet_4)
+   (openable cabinet_5)
+   (openable cabinet_6)
+   (openable drawer_1)
+   (openable drawer_2)
+   (openable drawer_3)
+   (openable fridge_1)
+   (not (opened cabinet_1))
+   (not (opened cabinet_2))
+   (not (opened cabinet_3))
+   (not (opened cabinet_4))
+   (not (opened cabinet_5))
+   (not (opened cabinet_6))
+   (not (opened drawer_1))
+   (not (opened drawer_2))
+   (not (opened drawer_3))
+   (not (opened fridge_1))
+   (not (holdsAny agent1))
+   (not (isHot apple1))
+   (not (isSliced apple1))
+   (not (isClean apple1))
+   (not (isCool apple1))
+   (not (isOn apple1))
+   (not (isToggled apple1))
+   (= (total-cost) 0)
+ )
+ (:goal (and (isHot apple1) (isSliced apple1) (inReceptacle apple1 garbagecan_1)))
+)
+
+
+
+
+The planner/validator reported an error for your previous DF/PF.
+Here is the error message:
+/tmp/pddl_run_qtwmbcs_/domain.pddl: syntax error in line 72, ')':
+domain definition expected
+
+
+Now rewrite both the domain and problem files with the minimal fix.
+
+Generated df and pf:
+(define (domain alfred)
+ (:requirements
+    :adl
+    :action-costs
+    :typing
+ )
+ (:types
+  agent
+  location
+  receptacle
+  object
+  rtype
+  otype
+  )
+
+ (:predicates
+    (atLocation ?a - agent ?l - location)                     ; true if the agent is at the location
+    (receptacleAtLocation ?r - receptacle ?l - location)      ; true if the receptacle is at the location (constant)
+    (objectAtLocation ?o - object ?l - location)              ; true if the object is at the location
+    (openable ?r - receptacle)                                ; true if a receptacle is openable
+    (opened ?r - receptacle)                                  ; true if a receptacle is opened
+    (inReceptacle ?o - object ?r - receptacle)                ; object ?o is in receptacle ?r
+    (isReceptacleObject ?o - object)                          ; true if the object can have things put inside it
+    (inReceptacleObject ?innerObject - object ?outerObject - object)                ; object ?innerObject is inside object ?outerObject
+    (isReceptacleObjectFull ?o - object)                      ; true if the receptacle object contains something
+    (wasInReceptacle ?o - object ?r - receptacle)             ; object ?o was or is in receptacle ?r now or some time in the past
+    (checked ?r - receptacle)                                 ; whether the receptacle has been looked inside/visited
+    (examined ?l - location)                                  ; TODO
+    (receptacleType ?r - receptacle ?t - rtype)               ; the type of receptacle (Cabinet vs Cabinet|01|2...)
+    (canContain ?rt - rtype ?ot - otype)                      ; true if receptacle can hold object
+    (objectType ?o - object ?t - otype)                       ; the type of object (Apple vs Apple|01|2...)
+    (holds ?a - agent ?o - object)                            ; object ?o is held by agent ?a
+    (holdsAny ?a - agent)                                     ; agent ?a holds an object
+    (holdsAnyReceptacleObject ?a - agent)                        ; agent ?a holds a receptacle object
+    (full ?r - receptacle)                                    ; true if the receptacle has no remaining space
+    (isClean ?o - object)                                     ; true if the object has been clean in sink
+    (cleanable ?o - object)                                   ; true if the object can be placed in a sink
+    (isHot ?o - object)                                       ; true if the object has been heated up
+    (heatable ?o - object)                                    ; true if the object can be heated up in a microwave
+    (isCool ?o - object)                                      ; true if the object has been cooled
+    (coolable ?o - object)                                    ; true if the object can be cooled in the fridge
+    (pickupable ?o - object)                                   ; true if the object can be picked up
+    (moveable ?o - object)                                      ; true if the object can be moved
+    (toggleable ?o - object)                                  ; true if the object can be turned on/off
+    (isOn ?o - object)                                        ; true if the object is on
+    (isToggled ?o - object)                                   ; true if the object has been toggled
+    (sliceable ?o - object)                                   ; true if the object can be sliced
+    (isSliced ?o - object)                                    ; true if the object is sliced
+ )
+
+  (:functions
+    (distance ?from ?to)
+    (total-cost) - number
+   )
+
+(:action look
+    :parameters (?a - agent ?l - location)
+    :precondition
+        (and
+            (atLocation ?a ?l)
+        )
+    :effect
+        (and
+            (checked ?l)
+        )
+)
+
+(:action inventory
+    :parameters (?a - agent)
+    :precondition
+        ()
+    :effect
+        (and
+            (checked ?a)
+        )
+)
+
+(:action examineReceptacle
+    :parameters (?a - agent ?r - receptacle)
+    :precondition
+        (and
+            (exists (?l - location)
+                (and
+                    (atLocation ?a ?l)
+                    (receptacleAtLocation ?r ?l)
+                )
+            )
+        )
+    :effect
+        (and
+            (checked ?r)
+        )
+)
+
+(:action examineObject
+    :parameters (?a - agent ?o - object)
+    :precondition
+        (or
+            (exists (?l - location ?r - receptacle)
+                (and
+                    (atLocation ?a ?l)
+                    (receptacleAtLocation ?r ?l)
+                    (inReceptacle ?o ?r)
+                    (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+              )
+            )
+            (holds ?a ?o)
+        )
+    :effect
+        (and
+            (checked ?o)
+        )
+)
+
+;; agent goes to receptacle
+ (:action GOTOLOCATION
+    :parameters (?a - agent ?lStart - location ?lEnd - location ?r - receptacle)
+    :precondition (and
+                    (atLocation ?a ?lStart)
+                    (receptacleAtLocation ?r ?lEnd)
+                  )
+    :effect (and
+                (not (atLocation ?a ?lStart))
+                (atLocation ?a ?lEnd)
+                (increase (total-cost) 1)
+            )
+ )
+
+;; agent opens receptacle
+ (:action OPENOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle)
+    :precondition (and
+            (openable ?r)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (not (opened ?r))
+            )
+    :effect (and
+                (opened ?r)
+                (checked ?r)
+                (increase (total-cost) 1)
+            )
+ )
+;; agent closes receptacle
+ (:action CloseObject
+    :parameters (?a - agent ?l - location ?r - receptacle)
+    :precondition (and
+            (openable ?r)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (opened ?r)
+            )
+    :effect (and
+                (not (opened ?r))
+                (increase (total-cost) 1)
+            )
+
+ )
+
+ ;; agent picks up object from a receptacle
+ (:action PICKUPOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition
+        (and
+            (pickupable ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (inReceptacle ?o ?r)
+            (not (holdsAny ?a))  ; agent's hands are empty.
+            (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+        )
+    :effect
+        (and
+            (not (inReceptacle ?o ?r))
+            (holds ?a ?o)
+            (holdsAny ?a)
+            (not (objectAtLocation ?o ?l))
+            (increase (total-cost) 1)
+        )
+ )
+
+;; agent puts down an object
+ (:action PUTOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle ?ot - otype ?rt - rtype)
+    :precondition (and
+            (holds ?a ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (or (not (openable ?r)) (opened ?r))    ; receptacle is opened if it is openable
+            (objectType ?o ?ot)
+            (receptacleType ?r ?rt)
+            (canContain ?rt ?ot)
+            )
+    :effect (and
+                (inReceptacle ?o ?r)
+                (objectAtLocation ?o ?l)
+                (not (holds ?a ?o))
+                (not (holdsAny ?a))
+                (increase (total-cost) 1)
+            )
+ )
+
+;; agent cleans some object
+ (:action CLEANOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (cleanable ?o)
+            (or
+                (receptacleType ?r SinkBasinType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isClean ?o)
+            )
+ )
+
+
+;; agent heats-up some object
+ (:action HEATOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (heatable ?o)
+            (or
+                (receptacleType ?r MicrowaveType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isHot ?o)
+                (not (isCool ?o))
+            )
+ )
+
+;; agent cools some object
+ (:action COOLOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (coolable ?o)
+            (or
+                (receptacleType ?r FridgeType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isCool ?o)
+                (not (isHot ?o))
+            )
+ )
+
+
+;; agent use object (e.g., toggle)
+ (:action USEOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition (and
+            (toggleable ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (inReceptacle ?o ?r)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (when (isOn ?o)
+                    (not (isOn ?o)))
+                (when (not (isOn ?o))
+                    (isOn ?o))
+                (isToggled ?o)
+            )
+ )
+
+
+;; agent slices some object with a knife
+ (:action SLICEOBJECT
+    :parameters (?a - agent ?l - location ?co - object ?ko - object)
+    :precondition
+            (and
+                (sliceable ?co)
+                (or
+                    (objectType ?ko KnifeType)
+                    (objectType ?ko ButterKnifeType)
+                )
+                (atLocation ?a ?l)
+                (objectAtLocation ?co ?l)
+                (holds ?a ?ko)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isSliced ?co)
+            )
+ )
+
+(:action help
+    :parameters (?a - agent)
+    :precondition
+        ()
+    :effect
+        (and
+            (checked ?a)
+        )
+)
+
+)
+(define (problem alfred-problem)
+ (:domain alfred)
+ (:objects
+   agent1 - agent
+   loc_room - location
+   cabinet_1 cabinet_2 cabinet_3 cabinet_4 cabinet_5 cabinet_6 - receptacle
+   coffeemachine_1 - receptacle
+   countertop_1 countertop_2 countertop_3 - receptacle
+   drawer_1 drawer_2 drawer_3 - receptacle
+   fridge_1 - receptacle
+   garbagecan_1 - receptacle
+   microwave_1 - receptacle
+   shelf_1 shelf_2 shelf_3 - receptacle
+   sinkbasin_1 - receptacle
+   stoveburner_1 stoveburner_2 stoveburner_3 stoveburner_4 - receptacle
+   toaster_1 - receptacle
+   CabinetType CoffeemachineType CountertopType DrawerType FridgeType GarbagecanType MicrowaveType ShelfType SinkbasinType StoveburnerType ToasterType - rtype
+   AppleType - otype
+ )
+ (:init
+   (atLocation agent1 loc_room)
+   (receptacleAtLocation cabinet_1 loc_room)
+   (receptacleAtLocation cabinet_2 loc_room)
+   (receptacleAtLocation cabinet_3 loc_room)
+   (receptacleAtLocation cabinet_4 loc_room)
+   (receptacleAtLocation cabinet_5 loc_room)
+   (receptacleAtLocation cabinet_6 loc_room)
+   (receptacleAtLocation coffeemachine_1 loc_room)
+   (receptacleAtLocation countertop_1 loc_room)
+   (receptacleAtLocation countertop_2 loc_room)
+   (receptacleAtLocation countertop_3 loc_room)
+   (receptacleAtLocation drawer_1 loc_room)
+   (receptacleAtLocation drawer_2 loc_room)
+   (receptacleAtLocation drawer_3 loc_room)
+   (receptacleAtLocation fridge_1 loc_room)
+   (receptacleAtLocation garbagecan_1 loc_room)
+   (receptacleAtLocation microwave_1 loc_room)
+   (receptacleAtLocation shelf_1 loc_room)
+   (receptacleAtLocation shelf_2 loc_room)
+   (receptacleAtLocation shelf_3 loc_room)
+   (receptacleAtLocation sinkbasin_1 loc_room)
+   (receptacleAtLocation stoveburner_1 loc_room)
+   (receptacleAtLocation stoveburner_2 loc_room)
+   (receptacleAtLocation stoveburner_3 loc_room)
+   (receptacleAtLocation stoveburner_4 loc_room)
+   (receptacleAtLocation toaster_1 loc_room)
+   (receptacleType cabinet_1 CabinetType)
+   (receptacleType cabinet_2 CabinetType)
+   (receptacleType cabinet_3 CabinetType)
+   (receptacleType cabinet_4 CabinetType)
+   (receptacleType cabinet_5 CabinetType)
+   (receptacleType cabinet_6 CabinetType)
+   (receptacleType coffeemachine_1 CoffeemachineType)
+   (receptacleType countertop_1 CountertopType)
+   (receptacleType countertop_2 CountertopType)
+   (receptacleType countertop_3 CountertopType)
+   (receptacleType drawer_1 DrawerType)
+   (receptacleType drawer_2 DrawerType)
+   (receptacleType drawer_3 DrawerType)
+   (receptacleType fridge_1 FridgeType)
+   (receptacleType garbagecan_1 GarbagecanType)
+   (receptacleType microwave_1 MicrowaveType)
+   (receptacleType shelf_1 ShelfType)
+   (receptacleType shelf_2 ShelfType)
+   (receptacleType shelf_3 ShelfType)
+   (receptacleType sinkbasin_1 SinkbasinType)
+   (receptacleType stoveburner_1 StoveburnerType)
+   (receptacleType stoveburner_2 StoveburnerType)
+   (receptacleType stoveburner_3 StoveburnerType)
+   (receptacleType stoveburner_4 StoveburnerType)
+   (receptacleType toaster_1 ToasterType)
+   (canContain MicrowaveType AppleType)
+   (canContain GarbagecanType AppleType)
+   (canContain FridgeType AppleType)
+   (openable cabinet_1)
+   (openable cabinet_2)
+   (openable cabinet_3)
+   (openable cabinet_4)
+   (openable cabinet_5)
+   (openable cabinet_6)
+   (openable drawer_1)
+   (openable drawer_2)
+   (openable drawer_3)
+   (openable fridge_1)
+   (not (opened cabinet_1))
+   (not (opened cabinet_2))
+   (not (opened cabinet_3))
+   (not (opened cabinet_4))
+   (not (opened cabinet_5))
+   (not (opened cabinet_6))
+   (not (opened drawer_1))
+   (not (opened drawer_2))
+   (not (opened drawer_3))
+   (not (opened fridge_1))
+   (not (holdsAny agent1))
+   (= (total-cost) 0)
+ )
+ (:goal (opened fridge_1))
+)
+Actions from solver(df, pf): None
+Raw plan text: 
+--Small Loop--: 2
+Prompt: Please provide the output in strict JSON format, without any additional text or explanation.
+The format MUST be exactly:
+{{
+  "df": "...",
+  "pf": "..."
+}}
+
+
+You are in a partially observable ALFWorld environment.
+You must build/update a PDDL domain file (df) and problem file (pf) from ONLY the observations you have seen.
+
+Task goal (natural language):
+Your task is to: heat some sliced apple and put it in garbagecan.
+
+Latest observation summary:
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+Valid actions you are currently allowed to take:
+['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to cabinet 5', 'go to cabinet 6', 'go to coffeemachine 1', 'go to countertop 1', 'go to countertop 2', 'go to countertop 3', 'go to drawer 1', 'go to drawer 2', 'go to drawer 3', 'go to fridge 1', 'go to garbagecan 1', 'go to microwave 1', 'go to shelf 1', 'go to shelf 2', 'go to shelf 3', 'go to sinkbasin 1', 'go to stoveburner 1', 'go to stoveburner 2', 'go to stoveburner 3', 'go to stoveburner 4', 'go to toaster 1']
+
+Your DF MUST define actions with these exact names (case-insensitive is okay, but keep spelling):
+
+1) GOTOLOCATION
+   - effect should update where the agent is
+
+2) OPENOBJECT
+   - for openable receptacles
+
+3) PICKUPOBJECT
+   - take an object from a receptacle
+
+4) PUTOBJECT
+   - put/move an object to a receptacle
+
+5) USEOBJECT
+   - use an object (e.g., a lamp)
+
+6) HEATOBJECT
+7) CLEANOBJECT
+8) COOLOBJECT
+9) SLICEOBJECT
+
+Keep DF compact. Use typing and a minimal set of predicates such as:
+  (at ?a ?r), (open ?r), (in ?o ?r), (holding ?a ?o), (heated ?o), (clean ?o), (cooled ?o), (sliced ?o)
+
+PF should contain ONLY grounded objects and facts that are supported by observations.
+
+Guidelines:
+- Do NOT invent objects or receptacles that were not observed.
+- If the task requires finding an object, your near-term goal can be "be at" an unvisited receptacle.
+- PF goal MUST be grounded (no variables, no quantifiers).
+- PF init should not use "(not ...)" unless strictly necessary.
+
+
+
+This is all the memory you have in this game (each action and its corresponding observation):
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+This is the previous domain file (df):
+(define (domain alfred)
+ (:requirements
+    :adl
+    :action-costs
+    :typing
+ )
+ (:types
+  agent
+  location
+  receptacle
+  object
+  rtype
+  otype
+  )
+
+ (:predicates
+    (atLocation ?a - agent ?l - location)                     ; true if the agent is at the location
+    (receptacleAtLocation ?r - receptacle ?l - location)      ; true if the receptacle is at the location (constant)
+    (objectAtLocation ?o - object ?l - location)              ; true if the object is at the location
+    (openable ?r - receptacle)                                ; true if a receptacle is openable
+    (opened ?r - receptacle)                                  ; true if a receptacle is opened
+    (inReceptacle ?o - object ?r - receptacle)                ; object ?o is in receptacle ?r
+    (isReceptacleObject ?o - object)                          ; true if the object can have things put inside it
+    (inReceptacleObject ?innerObject - object ?outerObject - object)                ; object ?innerObject is inside object ?outerObject
+    (isReceptacleObjectFull ?o - object)                      ; true if the receptacle object contains something
+    (wasInReceptacle ?o - object ?r - receptacle)             ; object ?o was or is in receptacle ?r now or some time in the past
+    (checked ?r - receptacle)                                 ; whether the receptacle has been looked inside/visited
+    (examined ?l - location)                                  ; TODO
+    (receptacleType ?r - receptacle ?t - rtype)               ; the type of receptacle (Cabinet vs Cabinet|01|2...)
+    (canContain ?rt - rtype ?ot - otype)                      ; true if receptacle can hold object
+    (objectType ?o - object ?t - otype)                       ; the type of object (Apple vs Apple|01|2...)
+    (holds ?a - agent ?o - object)                            ; object ?o is held by agent ?a
+    (holdsAny ?a - agent)                                     ; agent ?a holds an object
+    (holdsAnyReceptacleObject ?a - agent)                        ; agent ?a holds a receptacle object
+    (full ?r - receptacle)                                    ; true if the receptacle has no remaining space
+    (isClean ?o - object)                                     ; true if the object has been clean in sink
+    (cleanable ?o - object)                                   ; true if the object can be placed in a sink
+    (isHot ?o - object)                                       ; true if the object has been heated up
+    (heatable ?o - object)                                    ; true if the object can be heated up in a microwave
+    (isCool ?o - object)                                      ; true if the object has been cooled
+    (coolable ?o - object)                                    ; true if the object can be cooled in the fridge
+    (pickupable ?o - object)                                   ; true if the object can be picked up
+    (moveable ?o - object)                                      ; true if the object can be moved
+    (toggleable ?o - object)                                  ; true if the object can be turned on/off
+    (isOn ?o - object)                                        ; true if the object is on
+    (isToggled ?o - object)                                   ; true if the object has been toggled
+    (sliceable ?o - object)                                   ; true if the object can be sliced
+    (isSliced ?o - object)                                    ; true if the object is sliced
+ )
+
+  (:functions
+    (distance ?from ?to)
+    (total-cost) - number
+   )
+
+(:action look
+    :parameters (?a - agent ?l - location)
+    :precondition
+        (and
+            (atLocation ?a ?l)
+        )
+    :effect
+        (and
+            (checked ?l)
+        )
+)
+
+(:action inventory
+    :parameters (?a - agent)
+    :precondition
+        ()
+    :effect
+        (and
+            (checked ?a)
+        )
+)
+
+(:action examineReceptacle
+    :parameters (?a - agent ?r - receptacle)
+    :precondition
+        (and
+            (exists (?l - location)
+                (and
+                    (atLocation ?a ?l)
+                    (receptacleAtLocation ?r ?l)
+                )
+            )
+        )
+    :effect
+        (and
+            (checked ?r)
+        )
+)
+
+(:action examineObject
+    :parameters (?a - agent ?o - object)
+    :precondition
+        (or
+            (exists (?l - location ?r - receptacle)
+                (and
+                    (atLocation ?a ?l)
+                    (receptacleAtLocation ?r ?l)
+                    (inReceptacle ?o ?r)
+                    (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+              )
+            )
+            (holds ?a ?o)
+        )
+    :effect
+        (and
+            (checked ?o)
+        )
+)
+
+;; agent goes to receptacle
+ (:action GOTOLOCATION
+    :parameters (?a - agent ?lStart - location ?lEnd - location ?r - receptacle)
+    :precondition (and
+                    (atLocation ?a ?lStart)
+                    (receptacleAtLocation ?r ?lEnd)
+                  )
+    :effect (and
+                (not (atLocation ?a ?lStart))
+                (atLocation ?a ?lEnd)
+                (increase (total-cost) 1)
+            )
+ )
+
+;; agent opens receptacle
+ (:action OPENOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle)
+    :precondition (and
+            (openable ?r)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (not (opened ?r))
+            )
+    :effect (and
+                (opened ?r)
+                (checked ?r)
+                (increase (total-cost) 1)
+            )
+ )
+;; agent closes receptacle
+ (:action CloseObject
+    :parameters (?a - agent ?l - location ?r - receptacle)
+    :precondition (and
+            (openable ?r)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (opened ?r)
+            )
+    :effect (and
+                (not (opened ?r))
+                (increase (total-cost) 1)
+            )
+
+ )
+
+ ;; agent picks up object from a receptacle
+ (:action PICKUPOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition
+        (and
+            (pickupable ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (inReceptacle ?o ?r)
+            (not (holdsAny ?a))  ; agent's hands are empty.
+            (or (not (openable ?r)) (opened ?r))  ; receptacle is opened if it is openable.
+        )
+    :effect
+        (and
+            (not (inReceptacle ?o ?r))
+            (holds ?a ?o)
+            (holdsAny ?a)
+            (not (objectAtLocation ?o ?l))
+            (increase (total-cost) 1)
+        )
+ )
+
+;; agent puts down an object
+ (:action PUTOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle ?ot - otype ?rt - rtype)
+    :precondition (and
+            (holds ?a ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (or (not (openable ?r)) (opened ?r))    ; receptacle is opened if it is openable
+            (objectType ?o ?ot)
+            (receptacleType ?r ?rt)
+            (canContain ?rt ?ot)
+            )
+    :effect (and
+                (inReceptacle ?o ?r)
+                (objectAtLocation ?o ?l)
+                (not (holds ?a ?o))
+                (not (holdsAny ?a))
+                (increase (total-cost) 1)
+            )
+ )
+
+;; agent cleans some object
+ (:action CLEANOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (cleanable ?o)
+            (or
+                (receptacleType ?r SinkBasinType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isClean ?o)
+            )
+ )
+
+
+;; agent heats-up some object
+ (:action HEATOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (heatable ?o)
+            (or
+                (receptacleType ?r MicrowaveType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isHot ?o)
+                (not (isCool ?o))
+            )
+ )
+
+;; agent cools some object
+ (:action COOLOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and
+            (coolable ?o)
+            (or
+                (receptacleType ?r FridgeType)
+            )
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (holds ?a ?o)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isCool ?o)
+                (not (isHot ?o))
+            )
+ )
+
+
+;; agent use object (e.g., toggle)
+ (:action USEOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition (and
+            (toggleable ?o)
+            (atLocation ?a ?l)
+            (receptacleAtLocation ?r ?l)
+            (inReceptacle ?o ?r)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (when (isOn ?o)
+                    (not (isOn ?o)))
+                (when (not (isOn ?o))
+                    (isOn ?o))
+                (isToggled ?o)
+            )
+ )
+
+
+;; agent slices some object with a knife
+ (:action SLICEOBJECT
+    :parameters (?a - agent ?l - location ?co - object ?ko - object)
+    :precondition
+            (and
+                (sliceable ?co)
+                (or
+                    (objectType ?ko KnifeType)
+                    (objectType ?ko ButterKnifeType)
+                )
+                (atLocation ?a ?l)
+                (objectAtLocation ?co ?l)
+                (holds ?a ?ko)
+            )
+    :effect (and
+                (increase (total-cost) 5)
+                (isSliced ?co)
+            )
+ )
+
+(:action help
+    :parameters (?a - agent)
+    :precondition
+        ()
+    :effect
+        (and
+            (checked ?a)
+        )
+)
+
+)
+
+This is the previous problem file (pf):
+(define (problem alfred-problem)
+ (:domain alfred)
+ (:objects
+   agent1 - agent
+   loc_room - location
+   cabinet_1 cabinet_2 cabinet_3 cabinet_4 cabinet_5 cabinet_6 - receptacle
+   coffeemachine_1 - receptacle
+   countertop_1 countertop_2 countertop_3 - receptacle
+   drawer_1 drawer_2 drawer_3 - receptacle
+   fridge_1 - receptacle
+   garbagecan_1 - receptacle
+   microwave_1 - receptacle
+   shelf_1 shelf_2 shelf_3 - receptacle
+   sinkbasin_1 - receptacle
+   stoveburner_1 stoveburner_2 stoveburner_3 stoveburner_4 - receptacle
+   toaster_1 - receptacle
+   CabinetType CoffeemachineType CountertopType DrawerType FridgeType GarbagecanType MicrowaveType ShelfType SinkbasinType StoveburnerType ToasterType - rtype
+   AppleType - otype
+ )
+ (:init
+   (atLocation agent1 loc_room)
+   (receptacleAtLocation cabinet_1 loc_room)
+   (receptacleAtLocation cabinet_2 loc_room)
+   (receptacleAtLocation cabinet_3 loc_room)
+   (receptacleAtLocation cabinet_4 loc_room)
+   (receptacleAtLocation cabinet_5 loc_room)
+   (receptacleAtLocation cabinet_6 loc_room)
+   (receptacleAtLocation coffeemachine_1 loc_room)
+   (receptacleAtLocation countertop_1 loc_room)
+   (receptacleAtLocation countertop_2 loc_room)
+   (receptacleAtLocation countertop_3 loc_room)
+   (receptacleAtLocation drawer_1 loc_room)
+   (receptacleAtLocation drawer_2 loc_room)
+   (receptacleAtLocation drawer_3 loc_room)
+   (receptacleAtLocation fridge_1 loc_room)
+   (receptacleAtLocation garbagecan_1 loc_room)
+   (receptacleAtLocation microwave_1 loc_room)
+   (receptacleAtLocation shelf_1 loc_room)
+   (receptacleAtLocation shelf_2 loc_room)
+   (receptacleAtLocation shelf_3 loc_room)
+   (receptacleAtLocation sinkbasin_1 loc_room)
+   (receptacleAtLocation stoveburner_1 loc_room)
+   (receptacleAtLocation stoveburner_2 loc_room)
+   (receptacleAtLocation stoveburner_3 loc_room)
+   (receptacleAtLocation stoveburner_4 loc_room)
+   (receptacleAtLocation toaster_1 loc_room)
+   (receptacleType cabinet_1 CabinetType)
+   (receptacleType cabinet_2 CabinetType)
+   (receptacleType cabinet_3 CabinetType)
+   (receptacleType cabinet_4 CabinetType)
+   (receptacleType cabinet_5 CabinetType)
+   (receptacleType cabinet_6 CabinetType)
+   (receptacleType coffeemachine_1 CoffeemachineType)
+   (receptacleType countertop_1 CountertopType)
+   (receptacleType countertop_2 CountertopType)
+   (receptacleType countertop_3 CountertopType)
+   (receptacleType drawer_1 DrawerType)
+   (receptacleType drawer_2 DrawerType)
+   (receptacleType drawer_3 DrawerType)
+   (receptacleType fridge_1 FridgeType)
+   (receptacleType garbagecan_1 GarbagecanType)
+   (receptacleType microwave_1 MicrowaveType)
+   (receptacleType shelf_1 ShelfType)
+   (receptacleType shelf_2 ShelfType)
+   (receptacleType shelf_3 ShelfType)
+   (receptacleType sinkbasin_1 SinkbasinType)
+   (receptacleType stoveburner_1 StoveburnerType)
+   (receptacleType stoveburner_2 StoveburnerType)
+   (receptacleType stoveburner_3 StoveburnerType)
+   (receptacleType stoveburner_4 StoveburnerType)
+   (receptacleType toaster_1 ToasterType)
+   (canContain MicrowaveType AppleType)
+   (canContain GarbagecanType AppleType)
+   (canContain FridgeType AppleType)
+   (openable cabinet_1)
+   (openable cabinet_2)
+   (openable cabinet_3)
+   (openable cabinet_4)
+   (openable cabinet_5)
+   (openable cabinet_6)
+   (openable drawer_1)
+   (openable drawer_2)
+   (openable drawer_3)
+   (openable fridge_1)
+   (not (opened cabinet_1))
+   (not (opened cabinet_2))
+   (not (opened cabinet_3))
+   (not (opened cabinet_4))
+   (not (opened cabinet_5))
+   (not (opened cabinet_6))
+   (not (opened drawer_1))
+   (not (opened drawer_2))
+   (not (opened drawer_3))
+   (not (opened fridge_1))
+   (not (holdsAny agent1))
+   (= (total-cost) 0)
+ )
+ (:goal (opened fridge_1))
+)
+
+
+
+The planner/validator reported an error for your previous DF/PF.
+Here is the error message:
+/tmp/pddl_run_sgwik51u/domain.pddl: syntax error in line 71, ')':
+domain definition expected
+
+
+Now rewrite both the domain and problem files with the minimal fix.
+
+Generated df and pf:
+(define (domain alfred)
+ (:requirements :adl :typing :action-costs)
+ (:types agent location receptacle object rtype otype)
+ (:predicates
+    (atLocation ?a - agent ?l - location)
+    (receptacleAtLocation ?r - receptacle ?l - location)
+    (openable ?r - receptacle)
+    (opened ?r - receptacle)
+    (inReceptacle ?o - object ?r - receptacle)
+    (holds ?a - agent ?o - object)
+    (isHot ?o - object)
+    (isClean ?o - object)
+    (isCool ?o - object)
+    (isSliced ?o - object)
+    (isToggled ?o - object)
+    (objectType ?o - object ?t - otype)
+    (receptacleType ?r - receptacle ?t - rtype)
+    (canContain ?rt - rtype ?ot - otype)
+ )
+ (:action GOTOLOCATION
+    :parameters (?a - agent ?from - location ?to - location ?r - receptacle)
+    :precondition (and (atLocation ?a ?from) (receptacleAtLocation ?r ?to))
+    :effect (and (not (atLocation ?a ?from)) (atLocation ?a ?to))
+ )
+ (:action OPENOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle)
+    :precondition (and (openable ?r) (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (not (opened ?r)))
+    :effect (opened ?r)
+ )
+ (:action PICKUPOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (inReceptacle ?o ?r) (not (exists ?x (holds ?a ?x))) (or (not (openable ?r)) (opened ?r)))
+    :effect (and (not (inReceptacle ?o ?r)) (holds ?a ?o))
+ )
+ (:action PUTOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle ?ot - otype ?rt - rtype)
+    :precondition (and (holds ?a ?o) (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (or (not (openable ?r)) (opened ?r)) (objectType ?o ?ot) (receptacleType ?r ?rt) (canContain ?rt ?ot))
+    :effect (and (inReceptacle ?o ?r) (not (holds ?a ?o)))
+ )
+ (:action HEATOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (holds ?a ?o) (receptacleType ?r MicrowaveType))
+    :effect (isHot ?o)
+ )
+ (:action SLICEOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?k - object)
+    :precondition (and (atLocation ?a ?l) (holds ?a ?o) (holds ?a ?k) (objectType ?k KnifeType))
+    :effect (isSliced ?o)
+ )
+ (:action CLEANOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (holds ?a ?o) (receptacleType ?r SinkbasinType))
+    :effect (isClean ?o)
+ )
+ (:action COOLOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (holds ?a ?o) (receptacleType ?r FridgeType))
+    :effect (isCool ?o)
+ )
+ (:action USEOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (inReceptacle ?o ?r))
+    :effect (isToggled ?o)
+ )
+)
+(define (problem alfred-problem)
+ (:domain alfred)
+ (:objects
+   agent1 - agent
+   loc_room - location
+   cabinet_1 cabinet_2 cabinet_3 cabinet_4 cabinet_5 cabinet_6 - receptacle
+   coffeemachine_1 - receptacle
+   countertop_1 countertop_2 countertop_3 - receptacle
+   drawer_1 drawer_2 drawer_3 - receptacle
+   fridge_1 - receptacle
+   garbagecan_1 - receptacle
+   microwave_1 - receptacle
+   shelf_1 shelf_2 shelf_3 - receptacle
+   sinkbasin_1 - receptacle
+   stoveburner_1 stoveburner_2 stoveburner_3 stoveburner_4 - receptacle
+   toaster_1 - receptacle
+   CabinetType CoffeemachineType CountertopType DrawerType FridgeType GarbagecanType MicrowaveType ShelfType SinkbasinType StoveburnerType ToasterType - rtype
+   AppleType KnifeType - otype
+   apple1 - object
+   knife1 - object
+ )
+ (:init
+   (atLocation agent1 loc_room)
+   (receptacleAtLocation cabinet_1 loc_room)
+   (receptacleAtLocation cabinet_2 loc_room)
+   (receptacleAtLocation cabinet_3 loc_room)
+   (receptacleAtLocation cabinet_4 loc_room)
+   (receptacleAtLocation cabinet_5 loc_room)
+   (receptacleAtLocation cabinet_6 loc_room)
+   (receptacleAtLocation coffeemachine_1 loc_room)
+   (receptacleAtLocation countertop_1 loc_room)
+   (receptacleAtLocation countertop_2 loc_room)
+   (receptacleAtLocation countertop_3 loc_room)
+   (receptacleAtLocation drawer_1 loc_room)
+   (receptacleAtLocation drawer_2 loc_room)
+   (receptacleAtLocation drawer_3 loc_room)
+   (receptacleAtLocation fridge_1 loc_room)
+   (receptacleAtLocation garbagecan_1 loc_room)
+   (receptacleAtLocation microwave_1 loc_room)
+   (receptacleAtLocation shelf_1 loc_room)
+   (receptacleAtLocation shelf_2 loc_room)
+   (receptacleAtLocation shelf_3 loc_room)
+   (receptacleAtLocation sinkbasin_1 loc_room)
+   (receptacleAtLocation stoveburner_1 loc_room)
+   (receptacleAtLocation stoveburner_2 loc_room)
+   (receptacleAtLocation stoveburner_3 loc_room)
+   (receptacleAtLocation stoveburner_4 loc_room)
+   (receptacleAtLocation toaster_1 loc_room)
+   (receptacleType cabinet_1 CabinetType)
+   (receptacleType cabinet_2 CabinetType)
+   (receptacleType cabinet_3 CabinetType)
+   (receptacleType cabinet_4 CabinetType)
+   (receptacleType cabinet_5 CabinetType)
+   (receptacleType cabinet_6 CabinetType)
+   (receptacleType coffeemachine_1 CoffeemachineType)
+   (receptacleType countertop_1 CountertopType)
+   (receptacleType countertop_2 CountertopType)
+   (receptacleType countertop_3 CountertopType)
+   (receptacleType drawer_1 DrawerType)
+   (receptacleType drawer_2 DrawerType)
+   (receptacleType drawer_3 DrawerType)
+   (receptacleType fridge_1 FridgeType)
+   (receptacleType garbagecan_1 GarbagecanType)
+   (receptacleType microwave_1 MicrowaveType)
+   (receptacleType shelf_1 ShelfType)
+   (receptacleType shelf_2 ShelfType)
+   (receptacleType shelf_3 ShelfType)
+   (receptacleType sinkbasin_1 SinkbasinType)
+   (receptacleType stoveburner_1 StoveburnerType)
+   (receptacleType stoveburner_2 StoveburnerType)
+   (receptacleType stoveburner_3 StoveburnerType)
+   (receptacleType stoveburner_4 StoveburnerType)
+   (receptacleType toaster_1 ToasterType)
+   (canContain MicrowaveType AppleType)
+   (canContain GarbagecanType AppleType)
+   (canContain FridgeType AppleType)
+   (openable cabinet_1)
+   (openable cabinet_2)
+   (openable cabinet_3)
+   (openable cabinet_4)
+   (openable cabinet_5)
+   (openable cabinet_6)
+   (openable drawer_1)
+   (openable drawer_2)
+   (openable drawer_3)
+   (openable fridge_1)
+   (not (opened cabinet_1))
+   (not (opened cabinet_2))
+   (not (opened cabinet_3))
+   (not (opened cabinet_4))
+   (not (opened cabinet_5))
+   (not (opened cabinet_6))
+   (not (opened drawer_1))
+   (not (opened drawer_2))
+   (not (opened drawer_3))
+   (not (opened fridge_1))
+   (objectType apple1 AppleType)
+   (objectType knife1 KnifeType)
+   (inReceptacle apple1 fridge_1)
+   (inReceptacle knife1 drawer_1)
+   (not (isHot apple1))
+   (not (isSliced apple1))
+   (not (isClean apple1))
+   (not (isCool apple1))
+   (not (isToggled apple1))
+   (not (holds agent1 apple1))
+   (not (holds agent1 knife1))
+ )
+ (:goal (and (isHot apple1) (isSliced apple1) (inReceptacle apple1 garbagecan_1)))
+)
+Actions from solver(df, pf): None
+Raw plan text: 
+--Small Loop--: 3
+Prompt: Please provide the output in strict JSON format, without any additional text or explanation.
+The format MUST be exactly:
+{{
+  "df": "...",
+  "pf": "..."
+}}
+
+
+You are in a partially observable ALFWorld environment.
+You must build/update a PDDL domain file (df) and problem file (pf) from ONLY the observations you have seen.
+
+Task goal (natural language):
+Your task is to: heat some sliced apple and put it in garbagecan.
+
+Latest observation summary:
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+Valid actions you are currently allowed to take:
+['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to cabinet 5', 'go to cabinet 6', 'go to coffeemachine 1', 'go to countertop 1', 'go to countertop 2', 'go to countertop 3', 'go to drawer 1', 'go to drawer 2', 'go to drawer 3', 'go to fridge 1', 'go to garbagecan 1', 'go to microwave 1', 'go to shelf 1', 'go to shelf 2', 'go to shelf 3', 'go to sinkbasin 1', 'go to stoveburner 1', 'go to stoveburner 2', 'go to stoveburner 3', 'go to stoveburner 4', 'go to toaster 1']
+
+Your DF MUST define actions with these exact names (case-insensitive is okay, but keep spelling):
+
+1) GOTOLOCATION
+   - effect should update where the agent is
+
+2) OPENOBJECT
+   - for openable receptacles
+
+3) PICKUPOBJECT
+   - take an object from a receptacle
+
+4) PUTOBJECT
+   - put/move an object to a receptacle
+
+5) USEOBJECT
+   - use an object (e.g., a lamp)
+
+6) HEATOBJECT
+7) CLEANOBJECT
+8) COOLOBJECT
+9) SLICEOBJECT
+
+Keep DF compact. Use typing and a minimal set of predicates such as:
+  (at ?a ?r), (open ?r), (in ?o ?r), (holding ?a ?o), (heated ?o), (clean ?o), (cooled ?o), (sliced ?o)
+
+PF should contain ONLY grounded objects and facts that are supported by observations.
+
+Guidelines:
+- Do NOT invent objects or receptacles that were not observed.
+- If the task requires finding an object, your near-term goal can be "be at" an unvisited receptacle.
+- PF goal MUST be grounded (no variables, no quantifiers).
+- PF init should not use "(not ...)" unless strictly necessary.
+
+
+
+This is all the memory you have in this game (each action and its corresponding observation):
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+This is the previous domain file (df):
+(define (domain alfred)
+ (:requirements :adl :typing :action-costs)
+ (:types agent location receptacle object rtype otype)
+ (:predicates
+    (atLocation ?a - agent ?l - location)
+    (receptacleAtLocation ?r - receptacle ?l - location)
+    (openable ?r - receptacle)
+    (opened ?r - receptacle)
+    (inReceptacle ?o - object ?r - receptacle)
+    (holds ?a - agent ?o - object)
+    (isHot ?o - object)
+    (isClean ?o - object)
+    (isCool ?o - object)
+    (isSliced ?o - object)
+    (isToggled ?o - object)
+    (objectType ?o - object ?t - otype)
+    (receptacleType ?r - receptacle ?t - rtype)
+    (canContain ?rt - rtype ?ot - otype)
+ )
+ (:action GOTOLOCATION
+    :parameters (?a - agent ?from - location ?to - location ?r - receptacle)
+    :precondition (and (atLocation ?a ?from) (receptacleAtLocation ?r ?to))
+    :effect (and (not (atLocation ?a ?from)) (atLocation ?a ?to))
+ )
+ (:action OPENOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle)
+    :precondition (and (openable ?r) (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (not (opened ?r)))
+    :effect (opened ?r)
+ )
+ (:action PICKUPOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (inReceptacle ?o ?r) (not (exists ?x (holds ?a ?x))) (or (not (openable ?r)) (opened ?r)))
+    :effect (and (not (inReceptacle ?o ?r)) (holds ?a ?o))
+ )
+ (:action PUTOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle ?ot - otype ?rt - rtype)
+    :precondition (and (holds ?a ?o) (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (or (not (openable ?r)) (opened ?r)) (objectType ?o ?ot) (receptacleType ?r ?rt) (canContain ?rt ?ot))
+    :effect (and (inReceptacle ?o ?r) (not (holds ?a ?o)))
+ )
+ (:action HEATOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (holds ?a ?o) (receptacleType ?r MicrowaveType))
+    :effect (isHot ?o)
+ )
+ (:action SLICEOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?k - object)
+    :precondition (and (atLocation ?a ?l) (holds ?a ?o) (holds ?a ?k) (objectType ?k KnifeType))
+    :effect (isSliced ?o)
+ )
+ (:action CLEANOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (holds ?a ?o) (receptacleType ?r SinkbasinType))
+    :effect (isClean ?o)
+ )
+ (:action COOLOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (holds ?a ?o) (receptacleType ?r FridgeType))
+    :effect (isCool ?o)
+ )
+ (:action USEOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (inReceptacle ?o ?r))
+    :effect (isToggled ?o)
+ )
+)
+
+This is the previous problem file (pf):
+(define (problem alfred-problem)
+ (:domain alfred)
+ (:objects
+   agent1 - agent
+   loc_room - location
+   cabinet_1 cabinet_2 cabinet_3 cabinet_4 cabinet_5 cabinet_6 - receptacle
+   coffeemachine_1 - receptacle
+   countertop_1 countertop_2 countertop_3 - receptacle
+   drawer_1 drawer_2 drawer_3 - receptacle
+   fridge_1 - receptacle
+   garbagecan_1 - receptacle
+   microwave_1 - receptacle
+   shelf_1 shelf_2 shelf_3 - receptacle
+   sinkbasin_1 - receptacle
+   stoveburner_1 stoveburner_2 stoveburner_3 stoveburner_4 - receptacle
+   toaster_1 - receptacle
+   CabinetType CoffeemachineType CountertopType DrawerType FridgeType GarbagecanType MicrowaveType ShelfType SinkbasinType StoveburnerType ToasterType - rtype
+   AppleType KnifeType - otype
+   apple1 - object
+   knife1 - object
+ )
+ (:init
+   (atLocation agent1 loc_room)
+   (receptacleAtLocation cabinet_1 loc_room)
+   (receptacleAtLocation cabinet_2 loc_room)
+   (receptacleAtLocation cabinet_3 loc_room)
+   (receptacleAtLocation cabinet_4 loc_room)
+   (receptacleAtLocation cabinet_5 loc_room)
+   (receptacleAtLocation cabinet_6 loc_room)
+   (receptacleAtLocation coffeemachine_1 loc_room)
+   (receptacleAtLocation countertop_1 loc_room)
+   (receptacleAtLocation countertop_2 loc_room)
+   (receptacleAtLocation countertop_3 loc_room)
+   (receptacleAtLocation drawer_1 loc_room)
+   (receptacleAtLocation drawer_2 loc_room)
+   (receptacleAtLocation drawer_3 loc_room)
+   (receptacleAtLocation fridge_1 loc_room)
+   (receptacleAtLocation garbagecan_1 loc_room)
+   (receptacleAtLocation microwave_1 loc_room)
+   (receptacleAtLocation shelf_1 loc_room)
+   (receptacleAtLocation shelf_2 loc_room)
+   (receptacleAtLocation shelf_3 loc_room)
+   (receptacleAtLocation sinkbasin_1 loc_room)
+   (receptacleAtLocation stoveburner_1 loc_room)
+   (receptacleAtLocation stoveburner_2 loc_room)
+   (receptacleAtLocation stoveburner_3 loc_room)
+   (receptacleAtLocation stoveburner_4 loc_room)
+   (receptacleAtLocation toaster_1 loc_room)
+   (receptacleType cabinet_1 CabinetType)
+   (receptacleType cabinet_2 CabinetType)
+   (receptacleType cabinet_3 CabinetType)
+   (receptacleType cabinet_4 CabinetType)
+   (receptacleType cabinet_5 CabinetType)
+   (receptacleType cabinet_6 CabinetType)
+   (receptacleType coffeemachine_1 CoffeemachineType)
+   (receptacleType countertop_1 CountertopType)
+   (receptacleType countertop_2 CountertopType)
+   (receptacleType countertop_3 CountertopType)
+   (receptacleType drawer_1 DrawerType)
+   (receptacleType drawer_2 DrawerType)
+   (receptacleType drawer_3 DrawerType)
+   (receptacleType fridge_1 FridgeType)
+   (receptacleType garbagecan_1 GarbagecanType)
+   (receptacleType microwave_1 MicrowaveType)
+   (receptacleType shelf_1 ShelfType)
+   (receptacleType shelf_2 ShelfType)
+   (receptacleType shelf_3 ShelfType)
+   (receptacleType sinkbasin_1 SinkbasinType)
+   (receptacleType stoveburner_1 StoveburnerType)
+   (receptacleType stoveburner_2 StoveburnerType)
+   (receptacleType stoveburner_3 StoveburnerType)
+   (receptacleType stoveburner_4 StoveburnerType)
+   (receptacleType toaster_1 ToasterType)
+   (canContain MicrowaveType AppleType)
+   (canContain GarbagecanType AppleType)
+   (canContain FridgeType AppleType)
+   (openable cabinet_1)
+   (openable cabinet_2)
+   (openable cabinet_3)
+   (openable cabinet_4)
+   (openable cabinet_5)
+   (openable cabinet_6)
+   (openable drawer_1)
+   (openable drawer_2)
+   (openable drawer_3)
+   (openable fridge_1)
+   (not (opened cabinet_1))
+   (not (opened cabinet_2))
+   (not (opened cabinet_3))
+   (not (opened cabinet_4))
+   (not (opened cabinet_5))
+   (not (opened cabinet_6))
+   (not (opened drawer_1))
+   (not (opened drawer_2))
+   (not (opened drawer_3))
+   (not (opened fridge_1))
+   (objectType apple1 AppleType)
+   (objectType knife1 KnifeType)
+   (inReceptacle apple1 fridge_1)
+   (inReceptacle knife1 drawer_1)
+   (not (isHot apple1))
+   (not (isSliced apple1))
+   (not (isClean apple1))
+   (not (isCool apple1))
+   (not (isToggled apple1))
+   (not (holds agent1 apple1))
+   (not (holds agent1 knife1))
+ )
+ (:goal (and (isHot apple1) (isSliced apple1) (inReceptacle apple1 garbagecan_1)))
+)
+
+
+
+The planner/validator reported an error for your previous DF/PF.
+Here is the error message:
+/tmp/pddl_run_9ewk73sf/domain.pddl: syntax error in line 32, '?X':
+domain definition expected
+
+
+Now rewrite both the domain and problem files with the minimal fix.
+
+Generated df and pf:
+(define (domain alfred)
+ (:requirements :adl :typing :action-costs)
+ (:types agent location receptacle object rtype otype)
+ (:predicates
+    (atLocation ?a - agent ?l - location)
+    (receptacleAtLocation ?r - receptacle ?l - location)
+    (openable ?r - receptacle)
+    (opened ?r - receptacle)
+    (inReceptacle ?o - object ?r - receptacle)
+    (holds ?a - agent ?o - object)
+    (isHot ?o - object)
+    (isClean ?o - object)
+    (isCool ?o - object)
+    (isSliced ?o - object)
+    (isToggled ?o - object)
+    (objectType ?o - object ?t - otype)
+    (receptacleType ?r - receptacle ?t - rtype)
+    (canContain ?rt - rtype ?ot - otype)
+ )
+ (:action GOTOLOCATION
+    :parameters (?a - agent ?from - location ?to - location ?r - receptacle)
+    :precondition (and (atLocation ?a ?from) (receptacleAtLocation ?r ?to))
+    :effect (and (not (atLocation ?a ?from)) (atLocation ?a ?to))
+ )
+ (:action OPENOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle)
+    :precondition (and (openable ?r) (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (not (opened ?r)))
+    :effect (opened ?r)
+ )
+ (:action PICKUPOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (inReceptacle ?o ?r) (not (exists (?x - object) (holds ?a ?x))) (or (not (openable ?r)) (opened ?r)))
+    :effect (and (not (inReceptacle ?o ?r)) (holds ?a ?o))
+ )
+ (:action PUTOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle ?ot - otype ?rt - rtype)
+    :precondition (and (holds ?a ?o) (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (or (not (openable ?r)) (opened ?r)) (objectType ?o ?ot) (receptacleType ?r ?rt) (canContain ?rt ?ot))
+    :effect (and (inReceptacle ?o ?r) (not (holds ?a ?o)))
+ )
+ (:action HEATOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (holds ?a ?o) (receptacleType ?r MicrowaveType))
+    :effect (isHot ?o)
+ )
+ (:action SLICEOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?k - object)
+    :precondition (and (atLocation ?a ?l) (holds ?a ?o) (holds ?a ?k) (objectType ?k KnifeType))
+    :effect (isSliced ?o)
+ )
+ (:action CLEANOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (holds ?a ?o) (receptacleType ?r SinkbasinType))
+    :effect (isClean ?o)
+ )
+ (:action COOLOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (holds ?a ?o) (receptacleType ?r FridgeType))
+    :effect (isCool ?o)
+ )
+ (:action USEOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (inReceptacle ?o ?r))
+    :effect (isToggled ?o)
+ )
+)
+(define (problem alfred-problem)
+ (:domain alfred)
+ (:objects
+   agent1 - agent
+   loc_room - location
+   cabinet_1 cabinet_2 cabinet_3 cabinet_4 cabinet_5 cabinet_6 - receptacle
+   coffeemachine_1 - receptacle
+   countertop_1 countertop_2 countertop_3 - receptacle
+   drawer_1 drawer_2 drawer_3 - receptacle
+   fridge_1 - receptacle
+   garbagecan_1 - receptacle
+   microwave_1 - receptacle
+   shelf_1 shelf_2 shelf_3 - receptacle
+   sinkbasin_1 - receptacle
+   stoveburner_1 stoveburner_2 stoveburner_3 stoveburner_4 - receptacle
+   toaster_1 - receptacle
+   CabinetType CoffeemachineType CountertopType DrawerType FridgeType GarbagecanType MicrowaveType ShelfType SinkbasinType StoveburnerType ToasterType - rtype
+   AppleType KnifeType - otype
+   apple1 - object
+   knife1 - object
+ )
+ (:init
+   (atLocation agent1 loc_room)
+   (receptacleAtLocation cabinet_1 loc_room)
+   (receptacleAtLocation cabinet_2 loc_room)
+   (receptacleAtLocation cabinet_3 loc_room)
+   (receptacleAtLocation cabinet_4 loc_room)
+   (receptacleAtLocation cabinet_5 loc_room)
+   (receptacleAtLocation cabinet_6 loc_room)
+   (receptacleAtLocation coffeemachine_1 loc_room)
+   (receptacleAtLocation countertop_1 loc_room)
+   (receptacleAtLocation countertop_2 loc_room)
+   (receptacleAtLocation countertop_3 loc_room)
+   (receptacleAtLocation drawer_1 loc_room)
+   (receptacleAtLocation drawer_2 loc_room)
+   (receptacleAtLocation drawer_3 loc_room)
+   (receptacleAtLocation fridge_1 loc_room)
+   (receptacleAtLocation garbagecan_1 loc_room)
+   (receptacleAtLocation microwave_1 loc_room)
+   (receptacleAtLocation shelf_1 loc_room)
+   (receptacleAtLocation shelf_2 loc_room)
+   (receptacleAtLocation shelf_3 loc_room)
+   (receptacleAtLocation sinkbasin_1 loc_room)
+   (receptacleAtLocation stoveburner_1 loc_room)
+   (receptacleAtLocation stoveburner_2 loc_room)
+   (receptacleAtLocation stoveburner_3 loc_room)
+   (receptacleAtLocation stoveburner_4 loc_room)
+   (receptacleAtLocation toaster_1 loc_room)
+   (receptacleType cabinet_1 CabinetType)
+   (receptacleType cabinet_2 CabinetType)
+   (receptacleType cabinet_3 CabinetType)
+   (receptacleType cabinet_4 CabinetType)
+   (receptacleType cabinet_5 CabinetType)
+   (receptacleType cabinet_6 CabinetType)
+   (receptacleType coffeemachine_1 CoffeemachineType)
+   (receptacleType countertop_1 CountertopType)
+   (receptacleType countertop_2 CountertopType)
+   (receptacleType countertop_3 CountertopType)
+   (receptacleType drawer_1 DrawerType)
+   (receptacleType drawer_2 DrawerType)
+   (receptacleType drawer_3 DrawerType)
+   (receptacleType fridge_1 FridgeType)
+   (receptacleType garbagecan_1 GarbagecanType)
+   (receptacleType microwave_1 MicrowaveType)
+   (receptacleType shelf_1 ShelfType)
+   (receptacleType shelf_2 ShelfType)
+   (receptacleType shelf_3 ShelfType)
+   (receptacleType sinkbasin_1 SinkbasinType)
+   (receptacleType stoveburner_1 StoveburnerType)
+   (receptacleType stoveburner_2 StoveburnerType)
+   (receptacleType stoveburner_3 StoveburnerType)
+   (receptacleType stoveburner_4 StoveburnerType)
+   (receptacleType toaster_1 ToasterType)
+   (canContain MicrowaveType AppleType)
+   (canContain GarbagecanType AppleType)
+   (canContain FridgeType AppleType)
+   (openable cabinet_1)
+   (openable cabinet_2)
+   (openable cabinet_3)
+   (openable cabinet_4)
+   (openable cabinet_5)
+   (openable cabinet_6)
+   (openable drawer_1)
+   (openable drawer_2)
+   (openable drawer_3)
+   (openable fridge_1)
+   (not (opened cabinet_1))
+   (not (opened cabinet_2))
+   (not (opened cabinet_3))
+   (not (opened cabinet_4))
+   (not (opened cabinet_5))
+   (not (opened cabinet_6))
+   (not (opened drawer_1))
+   (not (opened drawer_2))
+   (not (opened drawer_3))
+   (not (opened fridge_1))
+   (objectType apple1 AppleType)
+   (objectType knife1 KnifeType)
+   (inReceptacle apple1 fridge_1)
+   (inReceptacle knife1 drawer_1)
+   (not (isHot apple1))
+   (not (isSliced apple1))
+   (not (isClean apple1))
+   (not (isCool apple1))
+   (not (isToggled apple1))
+   (not (holds agent1 apple1))
+   (not (holds agent1 knife1))
+ )
+ (:goal (and (isHot apple1) (isSliced apple1) (inReceptacle apple1 garbagecan_1)))
+)
+Actions from solver(df, pf): None
+Raw plan text: 
+--Small Loop--: 4
+Prompt: Please provide the output in strict JSON format, without any additional text or explanation.
+The format MUST be exactly:
+{{
+  "df": "...",
+  "pf": "..."
+}}
+
+
+You are in a partially observable ALFWorld environment.
+You must build/update a PDDL domain file (df) and problem file (pf) from ONLY the observations you have seen.
+
+Task goal (natural language):
+Your task is to: heat some sliced apple and put it in garbagecan.
+
+Latest observation summary:
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+Valid actions you are currently allowed to take:
+['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to cabinet 5', 'go to cabinet 6', 'go to coffeemachine 1', 'go to countertop 1', 'go to countertop 2', 'go to countertop 3', 'go to drawer 1', 'go to drawer 2', 'go to drawer 3', 'go to fridge 1', 'go to garbagecan 1', 'go to microwave 1', 'go to shelf 1', 'go to shelf 2', 'go to shelf 3', 'go to sinkbasin 1', 'go to stoveburner 1', 'go to stoveburner 2', 'go to stoveburner 3', 'go to stoveburner 4', 'go to toaster 1']
+
+Your DF MUST define actions with these exact names (case-insensitive is okay, but keep spelling):
+
+1) GOTOLOCATION
+   - effect should update where the agent is
+
+2) OPENOBJECT
+   - for openable receptacles
+
+3) PICKUPOBJECT
+   - take an object from a receptacle
+
+4) PUTOBJECT
+   - put/move an object to a receptacle
+
+5) USEOBJECT
+   - use an object (e.g., a lamp)
+
+6) HEATOBJECT
+7) CLEANOBJECT
+8) COOLOBJECT
+9) SLICEOBJECT
+
+Keep DF compact. Use typing and a minimal set of predicates such as:
+  (at ?a ?r), (open ?r), (in ?o ?r), (holding ?a ?o), (heated ?o), (clean ?o), (cooled ?o), (sliced ?o)
+
+PF should contain ONLY grounded objects and facts that are supported by observations.
+
+Guidelines:
+- Do NOT invent objects or receptacles that were not observed.
+- If the task requires finding an object, your near-term goal can be "be at" an unvisited receptacle.
+- PF goal MUST be grounded (no variables, no quantifiers).
+- PF init should not use "(not ...)" unless strictly necessary.
+
+
+
+This is all the memory you have in this game (each action and its corresponding observation):
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+This is the previous domain file (df):
+(define (domain alfred)
+ (:requirements :adl :typing :action-costs)
+ (:types agent location receptacle object rtype otype)
+ (:predicates
+    (atLocation ?a - agent ?l - location)
+    (receptacleAtLocation ?r - receptacle ?l - location)
+    (openable ?r - receptacle)
+    (opened ?r - receptacle)
+    (inReceptacle ?o - object ?r - receptacle)
+    (holds ?a - agent ?o - object)
+    (isHot ?o - object)
+    (isClean ?o - object)
+    (isCool ?o - object)
+    (isSliced ?o - object)
+    (isToggled ?o - object)
+    (objectType ?o - object ?t - otype)
+    (receptacleType ?r - receptacle ?t - rtype)
+    (canContain ?rt - rtype ?ot - otype)
+ )
+ (:action GOTOLOCATION
+    :parameters (?a - agent ?from - location ?to - location ?r - receptacle)
+    :precondition (and (atLocation ?a ?from) (receptacleAtLocation ?r ?to))
+    :effect (and (not (atLocation ?a ?from)) (atLocation ?a ?to))
+ )
+ (:action OPENOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle)
+    :precondition (and (openable ?r) (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (not (opened ?r)))
+    :effect (opened ?r)
+ )
+ (:action PICKUPOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (inReceptacle ?o ?r) (not (exists (?x - object) (holds ?a ?x))) (or (not (openable ?r)) (opened ?r)))
+    :effect (and (not (inReceptacle ?o ?r)) (holds ?a ?o))
+ )
+ (:action PUTOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle ?ot - otype ?rt - rtype)
+    :precondition (and (holds ?a ?o) (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (or (not (openable ?r)) (opened ?r)) (objectType ?o ?ot) (receptacleType ?r ?rt) (canContain ?rt ?ot))
+    :effect (and (inReceptacle ?o ?r) (not (holds ?a ?o)))
+ )
+ (:action HEATOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (holds ?a ?o) (receptacleType ?r MicrowaveType))
+    :effect (isHot ?o)
+ )
+ (:action SLICEOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?k - object)
+    :precondition (and (atLocation ?a ?l) (holds ?a ?o) (holds ?a ?k) (objectType ?k KnifeType))
+    :effect (isSliced ?o)
+ )
+ (:action CLEANOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (holds ?a ?o) (receptacleType ?r SinkbasinType))
+    :effect (isClean ?o)
+ )
+ (:action COOLOBJECT
+    :parameters (?a - agent ?l - location ?r - receptacle ?o - object)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (holds ?a ?o) (receptacleType ?r FridgeType))
+    :effect (isCool ?o)
+ )
+ (:action USEOBJECT
+    :parameters (?a - agent ?l - location ?o - object ?r - receptacle)
+    :precondition (and (atLocation ?a ?l) (receptacleAtLocation ?r ?l) (inReceptacle ?o ?r))
+    :effect (isToggled ?o)
+ )
+)
+
+This is the previous problem file (pf):
+(define (problem alfred-problem)
+ (:domain alfred)
+ (:objects
+   agent1 - agent
+   loc_room - location
+   cabinet_1 cabinet_2 cabinet_3 cabinet_4 cabinet_5 cabinet_6 - receptacle
+   coffeemachine_1 - receptacle
+   countertop_1 countertop_2 countertop_3 - receptacle
+   drawer_1 drawer_2 drawer_3 - receptacle
+   fridge_1 - receptacle
+   garbagecan_1 - receptacle
+   microwave_1 - receptacle
+   shelf_1 shelf_2 shelf_3 - receptacle
+   sinkbasin_1 - receptacle
+   stoveburner_1 stoveburner_2 stoveburner_3 stoveburner_4 - receptacle
+   toaster_1 - receptacle
+   CabinetType CoffeemachineType CountertopType DrawerType FridgeType GarbagecanType MicrowaveType ShelfType SinkbasinType StoveburnerType ToasterType - rtype
+   AppleType KnifeType - otype
+   apple1 - object
+   knife1 - object
+ )
+ (:init
+   (atLocation agent1 loc_room)
+   (receptacleAtLocation cabinet_1 loc_room)
+   (receptacleAtLocation cabinet_2 loc_room)
+   (receptacleAtLocation cabinet_3 loc_room)
+   (receptacleAtLocation cabinet_4 loc_room)
+   (receptacleAtLocation cabinet_5 loc_room)
+   (receptacleAtLocation cabinet_6 loc_room)
+   (receptacleAtLocation coffeemachine_1 loc_room)
+   (receptacleAtLocation countertop_1 loc_room)
+   (receptacleAtLocation countertop_2 loc_room)
+   (receptacleAtLocation countertop_3 loc_room)
+   (receptacleAtLocation drawer_1 loc_room)
+   (receptacleAtLocation drawer_2 loc_room)
+   (receptacleAtLocation drawer_3 loc_room)
+   (receptacleAtLocation fridge_1 loc_room)
+   (receptacleAtLocation garbagecan_1 loc_room)
+   (receptacleAtLocation microwave_1 loc_room)
+   (receptacleAtLocation shelf_1 loc_room)
+   (receptacleAtLocation shelf_2 loc_room)
+   (receptacleAtLocation shelf_3 loc_room)
+   (receptacleAtLocation sinkbasin_1 loc_room)
+   (receptacleAtLocation stoveburner_1 loc_room)
+   (receptacleAtLocation stoveburner_2 loc_room)
+   (receptacleAtLocation stoveburner_3 loc_room)
+   (receptacleAtLocation stoveburner_4 loc_room)
+   (receptacleAtLocation toaster_1 loc_room)
+   (receptacleType cabinet_1 CabinetType)
+   (receptacleType cabinet_2 CabinetType)
+   (receptacleType cabinet_3 CabinetType)
+   (receptacleType cabinet_4 CabinetType)
+   (receptacleType cabinet_5 CabinetType)
+   (receptacleType cabinet_6 CabinetType)
+   (receptacleType coffeemachine_1 CoffeemachineType)
+   (receptacleType countertop_1 CountertopType)
+   (receptacleType countertop_2 CountertopType)
+   (receptacleType countertop_3 CountertopType)
+   (receptacleType drawer_1 DrawerType)
+   (receptacleType drawer_2 DrawerType)
+   (receptacleType drawer_3 DrawerType)
+   (receptacleType fridge_1 FridgeType)
+   (receptacleType garbagecan_1 GarbagecanType)
+   (receptacleType microwave_1 MicrowaveType)
+   (receptacleType shelf_1 ShelfType)
+   (receptacleType shelf_2 ShelfType)
+   (receptacleType shelf_3 ShelfType)
+   (receptacleType sinkbasin_1 SinkbasinType)
+   (receptacleType stoveburner_1 StoveburnerType)
+   (receptacleType stoveburner_2 StoveburnerType)
+   (receptacleType stoveburner_3 StoveburnerType)
+   (receptacleType stoveburner_4 StoveburnerType)
+   (receptacleType toaster_1 ToasterType)
+   (canContain MicrowaveType AppleType)
+   (canContain GarbagecanType AppleType)
+   (canContain FridgeType AppleType)
+   (openable cabinet_1)
+   (openable cabinet_2)
+   (openable cabinet_3)
+   (openable cabinet_4)
+   (openable cabinet_5)
+   (openable cabinet_6)
+   (openable drawer_1)
+   (openable drawer_2)
+   (openable drawer_3)
+   (openable fridge_1)
+   (not (opened cabinet_1))
+   (not (opened cabinet_2))
+   (not (opened cabinet_3))
+   (not (opened cabinet_4))
+   (not (opened cabinet_5))
+   (not (opened cabinet_6))
+   (not (opened drawer_1))
+   (not (opened drawer_2))
+   (not (opened drawer_3))
+   (not (opened fridge_1))
+   (objectType apple1 AppleType)
+   (objectType knife1 KnifeType)
+   (inReceptacle apple1 fridge_1)
+   (inReceptacle knife1 drawer_1)
+   (not (isHot apple1))
+   (not (isSliced apple1))
+   (not (isClean apple1))
+   (not (isCool apple1))
+   (not (isToggled apple1))
+   (not (holds agent1 apple1))
+   (not (holds agent1 knife1))
+ )
+ (:goal (and (isHot apple1) (isSliced apple1) (inReceptacle apple1 garbagecan_1)))
+)
+
+
+
+The planner/validator reported an error for your previous DF/PF.
+Here is the error message:
+Segmentation fault (core dumped)
+
+
+Now rewrite both the domain and problem files with the minimal fix.
+
+Generated df and pf:
+(define (domain alfred)
+ (:requirements :adl :typing)
+ (:types agent object receptacle)
+ (:predicates
+    (at ?a - agent ?r - receptacle)
+    (open ?r - receptacle)
+    (in ?o - object ?r - receptacle)
+    (holding ?a - agent ?o - object)
+    (isHot ?o - object)
+    (isSliced ?o - object)
+    (isClean ?o - object)
+    (isCool ?o - object)
+    (openable ?r - receptacle)
+    (isMicrowave ?r - receptacle)
+    (isFridge ?r - receptacle)
+    (isSinkbasin ?r - receptacle)
+    (isGarbagecan ?r - receptacle)
+    (isKnife ?o - object)
+ )
+ (:action GOTOLOCATION
+    :parameters (?a - agent ?r - receptacle)
+    :effect (and (forall (?r2 - receptacle) (when (at ?a ?r2) (not (at ?a ?r2)))) (at ?a ?r))
+ )
+ (:action OPENOBJECT
+    :parameters (?a - agent ?r - receptacle)
+    :precondition (and (at ?a ?r) (openable ?r) (not (open ?r)))
+    :effect (open ?r)
+ )
+ (:action PICKUPOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (at ?a ?r) (in ?o ?r) (forall (?o2 - object) (not (holding ?a ?o2))) (or (not (openable ?r)) (open ?r)))
+    :effect (and (not (in ?o ?r)) (holding ?a ?o))
+ )
+ (:action PUTOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (holding ?a ?o) (at ?a ?r) (or (not (openable ?r)) (open ?r)))
+    :effect (and (in ?o ?r) (not (holding ?a ?o)))
+ )
+ (:action HEATOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (holding ?a ?o) (at ?a ?r) (isMicrowave ?r))
+    :effect (isHot ?o)
+ )
+ (:action SLICEOBJECT
+    :parameters (?a - agent ?o - object ?k - object)
+    :precondition (and (holding ?a ?o) (holding ?a ?k) (isKnife ?k))
+    :effect (isSliced ?o)
+ )
+ (:action CLEANOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (holding ?a ?o) (at ?a ?r) (isSinkbasin ?r))
+    :effect (isClean ?o)
+ )
+ (:action COOLOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (holding ?a ?o) (at ?a ?r) (isFridge ?r))
+    :effect (isCool ?o)
+ )
+ (:action USEOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (at ?a ?r) (in ?o ?r))
+    :effect (isToggled ?o)
+ )
+)
+(define (problem alfred-problem)
+ (:domain alfred)
+ (:objects
+   agent1 - agent
+   apple1 knife1 - object
+   cabinet_1 cabinet_2 cabinet_3 cabinet_4 cabinet_5 cabinet_6 - receptacle
+   coffeemachine_1 - receptacle
+   countertop_1 countertop_2 countertop_3 - receptacle
+   drawer_1 drawer_2 drawer_3 - receptacle
+   fridge_1 - receptacle
+   garbagecan_1 - receptacle
+   microwave_1 - receptacle
+   shelf_1 shelf_2 shelf_3 - receptacle
+   sinkbasin_1 - receptacle
+   stoveburner_1 stoveburner_2 stoveburner_3 stoveburner_4 - receptacle
+   toaster_1 - receptacle
+ )
+ (:init
+   (at agent1 countertop_1)
+   (openable cabinet_1)
+   (openable cabinet_2)
+   (openable cabinet_3)
+   (openable cabinet_4)
+   (openable cabinet_5)
+   (openable cabinet_6)
+   (openable drawer_1)
+   (openable drawer_2)
+   (openable drawer_3)
+   (openable fridge_1)
+   (not (open cabinet_1))
+   (not (open cabinet_2))
+   (not (open cabinet_3))
+   (not (open cabinet_4))
+   (not (open cabinet_5))
+   (not (open cabinet_6))
+   (not (open drawer_1))
+   (not (open drawer_2))
+   (not (open drawer_3))
+   (not (open fridge_1))
+   (in apple1 fridge_1)
+   (in knife1 drawer_1)
+   (isMicrowave microwave_1)
+   (isFridge fridge_1)
+   (isSinkbasin sinkbasin_1)
+   (isGarbagecan garbagecan_1)
+   (isKnife knife1)
+   (not (isHot apple1))
+   (not (isSliced apple1))
+   (not (isClean apple1))
+   (not (isCool apple1))
+   (not (isToggled apple1))
+   (not (holding agent1 apple1))
+   (not (holding agent1 knife1))
+ )
+ (:goal (and (isHot apple1) (isSliced apple1) (in apple1 garbagecan_1)))
+)
+Actions from solver(df, pf): None
+Raw plan text: 
+--Small Loop--: 5
+Prompt: Please provide the output in strict JSON format, without any additional text or explanation.
+The format MUST be exactly:
+{{
+  "df": "...",
+  "pf": "..."
+}}
+
+
+You are in a partially observable ALFWorld environment.
+You must build/update a PDDL domain file (df) and problem file (pf) from ONLY the observations you have seen.
+
+Task goal (natural language):
+Your task is to: heat some sliced apple and put it in garbagecan.
+
+Latest observation summary:
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+Valid actions you are currently allowed to take:
+['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to cabinet 5', 'go to cabinet 6', 'go to coffeemachine 1', 'go to countertop 1', 'go to countertop 2', 'go to countertop 3', 'go to drawer 1', 'go to drawer 2', 'go to drawer 3', 'go to fridge 1', 'go to garbagecan 1', 'go to microwave 1', 'go to shelf 1', 'go to shelf 2', 'go to shelf 3', 'go to sinkbasin 1', 'go to stoveburner 1', 'go to stoveburner 2', 'go to stoveburner 3', 'go to stoveburner 4', 'go to toaster 1']
+
+Your DF MUST define actions with these exact names (case-insensitive is okay, but keep spelling):
+
+1) GOTOLOCATION
+   - effect should update where the agent is
+
+2) OPENOBJECT
+   - for openable receptacles
+
+3) PICKUPOBJECT
+   - take an object from a receptacle
+
+4) PUTOBJECT
+   - put/move an object to a receptacle
+
+5) USEOBJECT
+   - use an object (e.g., a lamp)
+
+6) HEATOBJECT
+7) CLEANOBJECT
+8) COOLOBJECT
+9) SLICEOBJECT
+
+Keep DF compact. Use typing and a minimal set of predicates such as:
+  (at ?a ?r), (open ?r), (in ?o ?r), (holding ?a ?o), (heated ?o), (clean ?o), (cooled ?o), (sliced ?o)
+
+PF should contain ONLY grounded objects and facts that are supported by observations.
+
+Guidelines:
+- Do NOT invent objects or receptacles that were not observed.
+- If the task requires finding an object, your near-term goal can be "be at" an unvisited receptacle.
+- PF goal MUST be grounded (no variables, no quantifiers).
+- PF init should not use "(not ...)" unless strictly necessary.
+
+
+
+This is all the memory you have in this game (each action and its corresponding observation):
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 6, a cabinet 5, a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a coffeemachine 1, a countertop 3, a countertop 2, a countertop 1, a drawer 3, a drawer 2, a drawer 1, a fridge 1, a garbagecan 1, a microwave 1, a shelf 3, a shelf 2, a shelf 1, a sinkbasin 1, a stoveburner 4, a stoveburner 3, a stoveburner 2, a stoveburner 1, and a toaster 1.
+
+
+This is the previous domain file (df):
+(define (domain alfred)
+ (:requirements :adl :typing)
+ (:types agent object receptacle)
+ (:predicates
+    (at ?a - agent ?r - receptacle)
+    (open ?r - receptacle)
+    (in ?o - object ?r - receptacle)
+    (holding ?a - agent ?o - object)
+    (isHot ?o - object)
+    (isSliced ?o - object)
+    (isClean ?o - object)
+    (isCool ?o - object)
+    (openable ?r - receptacle)
+    (isMicrowave ?r - receptacle)
+    (isFridge ?r - receptacle)
+    (isSinkbasin ?r - receptacle)
+    (isGarbagecan ?r - receptacle)
+    (isKnife ?o - object)
+ )
+ (:action GOTOLOCATION
+    :parameters (?a - agent ?r - receptacle)
+    :effect (and (forall (?r2 - receptacle) (when (at ?a ?r2) (not (at ?a ?r2)))) (at ?a ?r))
+ )
+ (:action OPENOBJECT
+    :parameters (?a - agent ?r - receptacle)
+    :precondition (and (at ?a ?r) (openable ?r) (not (open ?r)))
+    :effect (open ?r)
+ )
+ (:action PICKUPOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (at ?a ?r) (in ?o ?r) (forall (?o2 - object) (not (holding ?a ?o2))) (or (not (openable ?r)) (open ?r)))
+    :effect (and (not (in ?o ?r)) (holding ?a ?o))
+ )
+ (:action PUTOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (holding ?a ?o) (at ?a ?r) (or (not (openable ?r)) (open ?r)))
+    :effect (and (in ?o ?r) (not (holding ?a ?o)))
+ )
+ (:action HEATOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (holding ?a ?o) (at ?a ?r) (isMicrowave ?r))
+    :effect (isHot ?o)
+ )
+ (:action SLICEOBJECT
+    :parameters (?a - agent ?o - object ?k - object)
+    :precondition (and (holding ?a ?o) (holding ?a ?k) (isKnife ?k))
+    :effect (isSliced ?o)
+ )
+ (:action CLEANOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (holding ?a ?o) (at ?a ?r) (isSinkbasin ?r))
+    :effect (isClean ?o)
+ )
+ (:action COOLOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (holding ?a ?o) (at ?a ?r) (isFridge ?r))
+    :effect (isCool ?o)
+ )
+ (:action USEOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (at ?a ?r) (in ?o ?r))
+    :effect (isToggled ?o)
+ )
+)
+
+This is the previous problem file (pf):
+(define (problem alfred-problem)
+ (:domain alfred)
+ (:objects
+   agent1 - agent
+   apple1 knife1 - object
+   cabinet_1 cabinet_2 cabinet_3 cabinet_4 cabinet_5 cabinet_6 - receptacle
+   coffeemachine_1 - receptacle
+   countertop_1 countertop_2 countertop_3 - receptacle
+   drawer_1 drawer_2 drawer_3 - receptacle
+   fridge_1 - receptacle
+   garbagecan_1 - receptacle
+   microwave_1 - receptacle
+   shelf_1 shelf_2 shelf_3 - receptacle
+   sinkbasin_1 - receptacle
+   stoveburner_1 stoveburner_2 stoveburner_3 stoveburner_4 - receptacle
+   toaster_1 - receptacle
+ )
+ (:init
+   (at agent1 countertop_1)
+   (openable cabinet_1)
+   (openable cabinet_2)
+   (openable cabinet_3)
+   (openable cabinet_4)
+   (openable cabinet_5)
+   (openable cabinet_6)
+   (openable drawer_1)
+   (openable drawer_2)
+   (openable drawer_3)
+   (openable fridge_1)
+   (not (open cabinet_1))
+   (not (open cabinet_2))
+   (not (open cabinet_3))
+   (not (open cabinet_4))
+   (not (open cabinet_5))
+   (not (open cabinet_6))
+   (not (open drawer_1))
+   (not (open drawer_2))
+   (not (open drawer_3))
+   (not (open fridge_1))
+   (in apple1 fridge_1)
+   (in knife1 drawer_1)
+   (isMicrowave microwave_1)
+   (isFridge fridge_1)
+   (isSinkbasin sinkbasin_1)
+   (isGarbagecan garbagecan_1)
+   (isKnife knife1)
+   (not (isHot apple1))
+   (not (isSliced apple1))
+   (not (isClean apple1))
+   (not (isCool apple1))
+   (not (isToggled apple1))
+   (not (holding agent1 apple1))
+   (not (holding agent1 knife1))
+ )
+ (:goal (and (isHot apple1) (isSliced apple1) (in apple1 garbagecan_1)))
+)
+
+
+
+The planner/validator reported an error for your previous DF/PF.
+Here is the error message:
+Segmentation fault (core dumped)
+
+
+Now rewrite both the domain and problem files with the minimal fix.
+
+Generated df and pf:
+(define (domain alfred)
+ (:requirements :adl :typing)
+ (:types agent object receptacle)
+ (:predicates
+    (at ?a - agent ?r - receptacle)
+    (open ?r - receptacle)
+    (in ?o - object ?r - receptacle)
+    (holding ?a - agent ?o - object)
+    (isHot ?o - object)
+    (isSliced ?o - object)
+    (isClean ?o - object)
+    (isCool ?o - object)
+    (isToggled ?o - object)
+    (openable ?r - receptacle)
+    (isMicrowave ?r - receptacle)
+    (isFridge ?r - receptacle)
+    (isSinkbasin ?r - receptacle)
+    (isGarbagecan ?r - receptacle)
+    (isKnife ?o - object)
+ )
+ (:action GOTOLOCATION
+    :parameters (?a - agent ?r - receptacle)
+    :effect (and (forall (?r2 - receptacle) (when (at ?a ?r2) (not (at ?a ?r2)))) (at ?a ?r))
+ )
+ (:action OPENOBJECT
+    :parameters (?a - agent ?r - receptacle)
+    :precondition (and (at ?a ?r) (openable ?r) (not (open ?r)))
+    :effect (open ?r)
+ )
+ (:action PICKUPOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (at ?a ?r) (in ?o ?r) (forall (?o2 - object) (not (holding ?a ?o2))) (or (not (openable ?r)) (open ?r)))
+    :effect (and (not (in ?o ?r)) (holding ?a ?o))
+ )
+ (:action PUTOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (holding ?a ?o) (at ?a ?r) (or (not (openable ?r)) (open ?r)))
+    :effect (and (in ?o ?r) (not (holding ?a ?o)))
+ )
+ (:action HEATOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (holding ?a ?o) (at ?a ?r) (isMicrowave ?r))
+    :effect (isHot ?o)
+ )
+ (:action SLICEOBJECT
+    :parameters (?a - agent ?o - object ?k - object)
+    :precondition (and (holding ?a ?o) (holding ?a ?k) (isKnife ?k))
+    :effect (isSliced ?o)
+ )
+ (:action CLEANOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (holding ?a ?o) (at ?a ?r) (isSinkbasin ?r))
+    :effect (isClean ?o)
+ )
+ (:action COOLOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (holding ?a ?o) (at ?a ?r) (isFridge ?r))
+    :effect (isCool ?o)
+ )
+ (:action USEOBJECT
+    :parameters (?a - agent ?o - object ?r - receptacle)
+    :precondition (and (at ?a ?r) (in ?o ?r))
+    :effect (isToggled ?o)
+ )
+)
+(define (problem alfred-problem)
+ (:domain alfred)
+ (:objects
+   agent1 - agent
+   apple1 knife1 - object
+   cabinet_1 cabinet_2 cabinet_3 cabinet_4 cabinet_5 cabinet_6 - receptacle
+   coffeemachine_1 - receptacle
+   countertop_1 countertop_2 countertop_3 - receptacle
+   drawer_1 drawer_2 drawer_3 - receptacle
+   fridge_1 - receptacle
+   garbagecan_1 - receptacle
+   microwave_1 - receptacle
+   shelf_1 shelf_2 shelf_3 - receptacle
+   sinkbasin_1 - receptacle
+   stoveburner_1 stoveburner_2 stoveburner_3 stoveburner_4 - receptacle
+   toaster_1 - receptacle
+ )
+ (:init
+   (at agent1 countertop_1)
+   (openable cabinet_1)
+   (openable cabinet_2)
+   (openable cabinet_3)
+   (openable cabinet_4)
+   (openable cabinet_5)
+   (openable cabinet_6)
+   (openable drawer_1)
+   (openable drawer_2)
+   (openable drawer_3)
+   (openable fridge_1)
+   (isMicrowave microwave_1)
+   (isFridge fridge_1)
+   (isSinkbasin sinkbasin_1)
+   (isGarbagecan garbagecan_1)
+   (isKnife knife1)
+ )
+ (:goal (and (isHot apple1) (isSliced apple1) (in apple1 garbagecan_1)))
+)
+Actions from solver(df, pf): None
+Raw plan text: 

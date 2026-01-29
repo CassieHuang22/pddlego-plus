@@ -1,0 +1,1436 @@
+Problem: pick_and_place_simple-SprayBottle-None-CounterTop-417
+Type: pick_and_place_simple -> basic
+Path: /home/yl3427/.cache/alfworld/json_2.1.1/valid_train/pick_and_place_simple-SprayBottle-None-CounterTop-417/trial_T20190909_091329_750799/initial_state.pddl
+Observations: -= Welcome to TextWorld, ALFRED! =-
+You are in the middle of a room. Looking quickly around you, you see a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a countertop 1, a garbagecan 1, a handtowelholder 1, a sinkbasin 2, a sinkbasin 1, a toilet 1, a toiletpaperhanger 1, and a towelholder 1.
+Valid Actions: ['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to countertop 1', 'go to garbagecan 1', 'go to handtowelholder 1', 'go to sinkbasin 1', 'go to sinkbasin 2', 'go to toilet 1', 'go to toiletpaperhanger 1', 'go to towelholder 1']
+Goal: Your task is to: put some spraybottle on countertop.
+
+
+====Step 0====
+
+----Larger Loop No. 0----
+successful_actions: []
+Small Loop, action_queue: []
+--Small Loop--: 0
+=== PROMPT SENT TO LLM ===
+Please provide the output in strict JSON format, without any additional text or explanation, including a PDDL domain file as 'df' and a PDDL problem file as 'pf'. 
+    The format should strictly be:
+        {{
+        "df": "...",
+        "pf": "..."
+        }}
+
+
+You are in a partially observable ALFWorld environment.
+You must build/update a PDDL domain file (df) and problem file (pf) from ONLY the observations you have seen.
+
+Task goal (natural language):
+Your task is to: put some spraybottle on countertop.
+
+Latest observation summary:
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a countertop 1, a garbagecan 1, a handtowelholder 1, a sinkbasin 2, a sinkbasin 1, a toilet 1, a toiletpaperhanger 1, and a towelholder 1.
+
+
+Valid actions you are currently allowed to take:
+['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to countertop 1', 'go to garbagecan 1', 'go to handtowelholder 1', 'go to sinkbasin 1', 'go to sinkbasin 2', 'go to toilet 1', 'go to toiletpaperhanger 1', 'go to towelholder 1']
+
+The following actions are allowed: 
+    1. go to a receptacle
+        :action GotoLocation
+        :parameters (?from - receptacle ?to - receptacle)
+    2. open a receptacle if it is closed
+        :action OpenObject
+        :parameters (?r - receptacle)
+    3. close a receptacle
+        :action CloseObject
+        :parameters (?r - receptacle)
+    4. take an object from another receptacle
+        :action PickupObject
+        :parameters (?o - object ?r - receptacle)
+    5. put object into/on/in another receptacle
+        :action PutObject
+        :parameters (?o - object ?r - receptacle)
+    6. using an object/receptacle by turning it on/off with a switch
+        :action useObject
+        :parameters (?o - object)
+    7. heat an object using a receptacle
+        :action HeatObject
+        :parameters (?o - object ?r - microwaveReceptacle)
+    8. clean an object using a receptacle
+        :action CleanObject
+        :parameters (?o - object ?r - receptacle)
+    9. cool an object using a receptacle
+        :action CoolObject
+        :parameters (?o - object ?r - fridgeReceptacle)
+    10. slice an object using a sharp object
+        :action SliceObject
+        :parameters (?r - receptacle ?co - object ?sharp_o - object)
+
+Guidelines:
+- Do NOT invent objects or receptacles that were not observed.
+- If the task requires finding an object, your near-term goal can be "be at" an unvisited receptacle.
+- PF goal MUST be grounded (no variables, no quantifiers).
+- PF init should not use "(not ...)" unless strictly necessary.
+
+=== END PROMPT ===
+=== RAW LLM RESPONSE ===
+{
+  "df": "(define (domain alfworld)\n  (:requirements :strips :typing)\n  (:types\n    object receptacle microwaveReceptacle fridgeReceptacle\n  )\n  (:predicates\n    (at ?loc - receptacle)\n    (object-at ?obj - object ?loc - receptacle)\n    (holding ?obj - object)\n    (closed ?r - receptacle)\n    (opened ?r - receptacle)\n    (used ?o - object)\n    (heated ?o - object)\n    (clean ?o - object)\n    (cooled ?o - object)\n    (sliced ?o - object)\n  )\n\n  (:action GotoLocation\n    :parameters (?from - receptacle ?to - receptacle)\n    :precondition (at ?from)\n    :effect (and (not (at ?from)) (at ?to))\n  )\n\n  (:action OpenObject\n    :parameters (?r - receptacle)\n    :precondition (closed ?r)\n    :effect (and (not (closed ?r)) (opened ?r))\n  )\n\n  (:action CloseObject\n    :parameters (?r - receptacle)\n    :precondition (opened ?r)\n    :effect (and (not (opened ?r)) (closed ?r))\n  )\n\n  (:action PickupObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (object-at ?o ?r) (opened ?r))\n    :effect (and (holding ?o) (not (object-at ?o ?r)))\n  )\n\n  (:action PutObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (holding ?o) (opened ?r))\n    :effect (and (object-at ?o ?r) (not (holding ?o)))\n  )\n\n  (:action useObject\n    :parameters (?o - object)\n    :precondition (holding ?o)\n    :effect (used ?o)\n  )\n\n  (:action HeatObject\n    :parameters (?o - object ?r - microwaveReceptacle)\n    :precondition (and (at ?r) (object-at ?o ?r))\n    :effect (heated ?o)\n  )\n\n  (:action CleanObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (object-at ?o ?r))\n    :effect (clean ?o)\n  )\n\n  (:action CoolObject\n    :parameters (?o - object ?r - fridgeReceptacle)\n    :precondition (and (at ?r) (object-at ?o ?r))\n    :effect (cooled ?o)\n  )\n\n  (:action SliceObject\n    :parameters (?r - receptacle ?co - object ?sharp_o - object)\n    :precondition (and (at ?r) (object-at ?co ?r) (holding ?sharp_o))\n    :effect (sliced ?co)\n  )\n)\n",
+  "pf": "(define (problem alfworld-problem)\n  (:domain alfworld)\n  (:objects\n    spraybottle - object\n    cabinet1 cabinet2 cabinet3 cabinet4 countertop1 garbagecan1 handtowelholder1 sinkbasin1 sinkbasin2 toilet1 toiletpaperhanger1 towelholder1 - receptacle\n  )\n  (:init\n    (at cabinet1)\n    (object-at spraybottle cabinet1)\n    (closed cabinet1)\n    (closed cabinet2)\n    (closed cabinet3)\n    (closed cabinet4)\n    (opened countertop1)\n    (opened garbagecan1)\n    (opened handtowelholder1)\n    (opened sinkbasin1)\n    (opened sinkbasin2)\n    (opened toilet1)\n    (opened toiletpaperhanger1)\n    (opened towelholder1)\n  )\n  (:goal (and (object-at spraybottle countertop1)))\n)"
+}
+=== END RESPONSE ===
+Generated df and pf:
+(define (domain alfworld)
+  (:requirements :strips :typing)
+  (:types
+    object receptacle microwaveReceptacle fridgeReceptacle
+  )
+  (:predicates
+    (at ?loc - receptacle)
+    (object-at ?obj - object ?loc - receptacle)
+    (holding ?obj - object)
+    (closed ?r - receptacle)
+    (opened ?r - receptacle)
+    (used ?o - object)
+    (heated ?o - object)
+    (clean ?o - object)
+    (cooled ?o - object)
+    (sliced ?o - object)
+  )
+
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (at ?from)
+    :effect (and (not (at ?from)) (at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (closed ?r)
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (opened ?r)
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r) (opened ?r))
+    :effect (and (holding ?o) (not (object-at ?o ?r)))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (holding ?o) (opened ?r))
+    :effect (and (object-at ?o ?r) (not (holding ?o)))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (holding ?o)
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - microwaveReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (clean ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - fridgeReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - object)
+    :precondition (and (at ?r) (object-at ?co ?r) (holding ?sharp_o))
+    :effect (sliced ?co)
+  )
+)
+
+(define (problem alfworld-problem)
+  (:domain alfworld)
+  (:objects
+    spraybottle - object
+    cabinet1 cabinet2 cabinet3 cabinet4 countertop1 garbagecan1 handtowelholder1 sinkbasin1 sinkbasin2 toilet1 toiletpaperhanger1 towelholder1 - receptacle
+  )
+  (:init
+    (at cabinet1)
+    (object-at spraybottle cabinet1)
+    (closed cabinet1)
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (opened countertop1)
+    (opened garbagecan1)
+    (opened handtowelholder1)
+    (opened sinkbasin1)
+    (opened sinkbasin2)
+    (opened toilet1)
+    (opened toiletpaperhanger1)
+    (opened towelholder1)
+  )
+  (:goal (and (object-at spraybottle countertop1)))
+)
+Actions: ['open cabinet 1', 'take spraybottle from cabinet 1', 'go to countertop 1', 'move spraybottle to countertop 1']
+Current action_queue: ['open cabinet 1', 'take spraybottle from cabinet 1', 'go to countertop 1', 'move spraybottle to countertop 1']
+> Action: open cabinet 1
+Nothing happens.
+
+After taking action 'open cabinet 1', valid actions: ['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to countertop 1', 'go to garbagecan 1', 'go to handtowelholder 1', 'go to sinkbasin 1', 'go to sinkbasin 2', 'go to toilet 1', 'go to toiletpaperhanger 1', 'go to towelholder 1']
+
+----Larger Loop No. 1----
+successful_actions: []
+Small Loop, action_queue: []
+=== PROMPT SENT TO LLM ===
+Please provide the output in strict JSON format, without any additional text or explanation, including a PDDL domain file as 'df' and a PDDL problem file as 'pf'. 
+    The format should strictly be:
+        {{
+        "df": "...",
+        "pf": "..."
+        }}
+
+
+You are in a partially observable ALFWorld environment.
+You must build/update a PDDL domain file (df) and problem file (pf) from ONLY the observations you have seen.
+
+Task goal (natural language):
+Your task is to: put some spraybottle on countertop.
+
+Latest observation summary:
+Action: open cabinet 1
+Nothing happens.
+
+
+Valid actions you are currently allowed to take:
+['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to countertop 1', 'go to garbagecan 1', 'go to handtowelholder 1', 'go to sinkbasin 1', 'go to sinkbasin 2', 'go to toilet 1', 'go to toiletpaperhanger 1', 'go to towelholder 1']
+
+The following actions are allowed: 
+    1. go to a receptacle
+        :action GotoLocation
+        :parameters (?from - receptacle ?to - receptacle)
+    2. open a receptacle if it is closed
+        :action OpenObject
+        :parameters (?r - receptacle)
+    3. close a receptacle
+        :action CloseObject
+        :parameters (?r - receptacle)
+    4. take an object from another receptacle
+        :action PickupObject
+        :parameters (?o - object ?r - receptacle)
+    5. put object into/on/in another receptacle
+        :action PutObject
+        :parameters (?o - object ?r - receptacle)
+    6. using an object/receptacle by turning it on/off with a switch
+        :action useObject
+        :parameters (?o - object)
+    7. heat an object using a receptacle
+        :action HeatObject
+        :parameters (?o - object ?r - microwaveReceptacle)
+    8. clean an object using a receptacle
+        :action CleanObject
+        :parameters (?o - object ?r - receptacle)
+    9. cool an object using a receptacle
+        :action CoolObject
+        :parameters (?o - object ?r - fridgeReceptacle)
+    10. slice an object using a sharp object
+        :action SliceObject
+        :parameters (?r - receptacle ?co - object ?sharp_o - object)
+
+Guidelines:
+- Do NOT invent objects or receptacles that were not observed.
+- If the task requires finding an object, your near-term goal can be "be at" an unvisited receptacle.
+- PF goal MUST be grounded (no variables, no quantifiers).
+- PF init should not use "(not ...)" unless strictly necessary.
+
+
+
+This is all the memory you have in this game including each action and its corresponding observations: 
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a countertop 1, a garbagecan 1, a handtowelholder 1, a sinkbasin 2, a sinkbasin 1, a toilet 1, a toiletpaperhanger 1, and a towelholder 1.
+
+
+You have already generated df and pf files according to the observations.
+This is previous domain file: 
+(define (domain alfworld)
+  (:requirements :strips :typing)
+  (:types
+    object receptacle microwaveReceptacle fridgeReceptacle
+  )
+  (:predicates
+    (at ?loc - receptacle)
+    (object-at ?obj - object ?loc - receptacle)
+    (holding ?obj - object)
+    (closed ?r - receptacle)
+    (opened ?r - receptacle)
+    (used ?o - object)
+    (heated ?o - object)
+    (clean ?o - object)
+    (cooled ?o - object)
+    (sliced ?o - object)
+  )
+
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (at ?from)
+    :effect (and (not (at ?from)) (at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (closed ?r)
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (opened ?r)
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r) (opened ?r))
+    :effect (and (holding ?o) (not (object-at ?o ?r)))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (holding ?o) (opened ?r))
+    :effect (and (object-at ?o ?r) (not (holding ?o)))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (holding ?o)
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - microwaveReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (clean ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - fridgeReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - object)
+    :precondition (and (at ?r) (object-at ?co ?r) (holding ?sharp_o))
+    :effect (sliced ?co)
+  )
+)
+
+
+This is previous problem file: 
+(define (problem alfworld-problem)
+  (:domain alfworld)
+  (:objects
+    spraybottle - object
+    cabinet1 cabinet2 cabinet3 cabinet4 countertop1 garbagecan1 handtowelholder1 sinkbasin1 sinkbasin2 toilet1 toiletpaperhanger1 towelholder1 - receptacle
+  )
+  (:init
+    (at cabinet1)
+    (object-at spraybottle cabinet1)
+    (closed cabinet1)
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (opened countertop1)
+    (opened garbagecan1)
+    (opened handtowelholder1)
+    (opened sinkbasin1)
+    (opened sinkbasin2)
+    (opened toilet1)
+    (opened toiletpaperhanger1)
+    (opened towelholder1)
+  )
+  (:goal (and (object-at spraybottle countertop1)))
+)
+
+
+
+
+Based on the df and pf that you generated, the external solver could generate a plan but after simulating in the game environment, it caused those errors: 
+In this step, you take the following actions and observations from those actions:
+Action: open cabinet 1
+Nothing happens.
+
+
+This is the action you take and got something wrong: open cabinet 1. You are trying to open a receptacle but nothing happens. You should first go to this receptacle to open it. But if you have already go to this receptacle and still seeing this error message, it means that this receptacle cannot be opened and you can directly see objects after you go to it. Do not try to open it!!
+
+
+
+Now rewrite both the domain and problem files with the minimal fix.
+
+=== END PROMPT ===
+=== RAW LLM RESPONSE ===
+{
+  "df": "(define (domain alfworld)\n  (:requirements :strips :typing)\n  (:types\n    object receptacle microwaveReceptacle fridgeReceptacle\n  )\n  (:predicates\n    (at ?loc - receptacle)\n    (object-at ?obj - object ?loc - receptacle)\n    (holding ?obj - object)\n    (closed ?r - receptacle)\n    (opened ?r - receptacle)\n    (used ?o - object)\n    (heated ?o - object)\n    (clean ?o - object)\n    (cooled ?o - object)\n    (sliced ?o - object)\n  )\n\n  (:action GotoLocation\n    :parameters (?from - receptacle ?to - receptacle)\n    :precondition (at ?from)\n    :effect (and (not (at ?from)) (at ?to))\n  )\n\n  (:action OpenObject\n    :parameters (?r - receptacle)\n    :precondition (closed ?r)\n    :effect (and (not (closed ?r)) (opened ?r))\n  )\n\n  (:action CloseObject\n    :parameters (?r - receptacle)\n    :precondition (opened ?r)\n    :effect (and (not (opened ?r)) (closed ?r))\n  )\n\n  (:action PickupObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (object-at ?o ?r) (opened ?r))\n    :effect (and (holding ?o) (not (object-at ?o ?r)))\n  )\n\n  (:action PutObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (holding ?o) (opened ?r))\n    :effect (and (object-at ?o ?r) (not (holding ?o)))\n  )\n\n  (:action useObject\n    :parameters (?o - object)\n    :precondition (holding ?o)\n    :effect (used ?o)\n  )\n\n  (:action HeatObject\n    :parameters (?o - object ?r - microwaveReceptacle)\n    :precondition (and (at ?r) (object-at ?o ?r))\n    :effect (heated ?o)\n  )\n\n  (:action CleanObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (object-at ?o ?r))\n    :effect (clean ?o)\n  )\n\n  (:action CoolObject\n    :parameters (?o - object ?r - fridgeReceptacle)\n    :precondition (and (at ?r) (object-at ?o ?r))\n    :effect (cooled ?o)\n  )\n\n  (:action SliceObject\n    :parameters (?r - receptacle ?co - object ?sharp_o - object)\n    :precondition (and (at ?r) (object-at ?co ?r) (holding ?sharp_o))\n    :effect (sliced ?co)\n  )\n)",
+  "pf": "(define (problem alfworld-problem)\n  (:domain alfworld)\n  (:objects\n    spraybottle - object\n    cabinet1 cabinet2 cabinet3 cabinet4 countertop1 garbagecan1 handtowelholder1 sinkbasin1 sinkbasin2 toilet1 toiletpaperhanger1 towelholder1 - receptacle\n  )\n  (:init\n    (at cabinet1)\n    (object-at spraybottle cabinet1)\n    (opened cabinet1) ; cabinet1 is non-openable, so it starts opened\n    (closed cabinet2)\n    (closed cabinet3)\n    (closed cabinet4)\n    (opened countertop1)\n    (opened garbagecan1)\n    (opened handtowelholder1)\n    (opened sinkbasin1)\n    (opened sinkbasin2)\n    (opened toilet1)\n    (opened toiletpaperhanger1)\n    (opened towelholder1)\n  )\n  (:goal (and (object-at spraybottle countertop1)))\n)"
+}
+=== END RESPONSE ===
+Generated df and pf:
+(define (domain alfworld)
+  (:requirements :strips :typing)
+  (:types
+    object receptacle microwaveReceptacle fridgeReceptacle
+  )
+  (:predicates
+    (at ?loc - receptacle)
+    (object-at ?obj - object ?loc - receptacle)
+    (holding ?obj - object)
+    (closed ?r - receptacle)
+    (opened ?r - receptacle)
+    (used ?o - object)
+    (heated ?o - object)
+    (clean ?o - object)
+    (cooled ?o - object)
+    (sliced ?o - object)
+  )
+
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (at ?from)
+    :effect (and (not (at ?from)) (at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (closed ?r)
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (opened ?r)
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r) (opened ?r))
+    :effect (and (holding ?o) (not (object-at ?o ?r)))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (holding ?o) (opened ?r))
+    :effect (and (object-at ?o ?r) (not (holding ?o)))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (holding ?o)
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - microwaveReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (clean ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - fridgeReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - object)
+    :precondition (and (at ?r) (object-at ?co ?r) (holding ?sharp_o))
+    :effect (sliced ?co)
+  )
+)
+(define (problem alfworld-problem)
+  (:domain alfworld)
+  (:objects
+    spraybottle - object
+    cabinet1 cabinet2 cabinet3 cabinet4 countertop1 garbagecan1 handtowelholder1 sinkbasin1 sinkbasin2 toilet1 toiletpaperhanger1 towelholder1 - receptacle
+  )
+  (:init
+    (at cabinet1)
+    (object-at spraybottle cabinet1)
+    (opened cabinet1) ; cabinet1 is non-openable, so it starts opened
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (opened countertop1)
+    (opened garbagecan1)
+    (opened handtowelholder1)
+    (opened sinkbasin1)
+    (opened sinkbasin2)
+    (opened toilet1)
+    (opened toiletpaperhanger1)
+    (opened towelholder1)
+  )
+  (:goal (and (object-at spraybottle countertop1)))
+)
+Actions: ['take spraybottle from cabinet 1', 'go to countertop 1', 'move spraybottle to countertop 1']
+Current action_queue: ['take spraybottle from cabinet 1', 'go to countertop 1', 'move spraybottle to countertop 1']
+> Action: take spraybottle from cabinet 1
+Nothing happens.
+
+After taking action 'take spraybottle from cabinet 1', valid actions: ['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to countertop 1', 'go to garbagecan 1', 'go to handtowelholder 1', 'go to sinkbasin 1', 'go to sinkbasin 2', 'go to toilet 1', 'go to toiletpaperhanger 1', 'go to towelholder 1']
+
+----Larger Loop No. 2----
+successful_actions: []
+Small Loop, action_queue: []
+=== PROMPT SENT TO LLM ===
+Please provide the output in strict JSON format, without any additional text or explanation, including a PDDL domain file as 'df' and a PDDL problem file as 'pf'. 
+    The format should strictly be:
+        {{
+        "df": "...",
+        "pf": "..."
+        }}
+
+
+You are in a partially observable ALFWorld environment.
+You must build/update a PDDL domain file (df) and problem file (pf) from ONLY the observations you have seen.
+
+Task goal (natural language):
+Your task is to: put some spraybottle on countertop.
+
+Latest observation summary:
+Action: take spraybottle from cabinet 1
+Nothing happens.
+
+
+Valid actions you are currently allowed to take:
+['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to countertop 1', 'go to garbagecan 1', 'go to handtowelholder 1', 'go to sinkbasin 1', 'go to sinkbasin 2', 'go to toilet 1', 'go to toiletpaperhanger 1', 'go to towelholder 1']
+
+The following actions are allowed: 
+    1. go to a receptacle
+        :action GotoLocation
+        :parameters (?from - receptacle ?to - receptacle)
+    2. open a receptacle if it is closed
+        :action OpenObject
+        :parameters (?r - receptacle)
+    3. close a receptacle
+        :action CloseObject
+        :parameters (?r - receptacle)
+    4. take an object from another receptacle
+        :action PickupObject
+        :parameters (?o - object ?r - receptacle)
+    5. put object into/on/in another receptacle
+        :action PutObject
+        :parameters (?o - object ?r - receptacle)
+    6. using an object/receptacle by turning it on/off with a switch
+        :action useObject
+        :parameters (?o - object)
+    7. heat an object using a receptacle
+        :action HeatObject
+        :parameters (?o - object ?r - microwaveReceptacle)
+    8. clean an object using a receptacle
+        :action CleanObject
+        :parameters (?o - object ?r - receptacle)
+    9. cool an object using a receptacle
+        :action CoolObject
+        :parameters (?o - object ?r - fridgeReceptacle)
+    10. slice an object using a sharp object
+        :action SliceObject
+        :parameters (?r - receptacle ?co - object ?sharp_o - object)
+
+Guidelines:
+- Do NOT invent objects or receptacles that were not observed.
+- If the task requires finding an object, your near-term goal can be "be at" an unvisited receptacle.
+- PF goal MUST be grounded (no variables, no quantifiers).
+- PF init should not use "(not ...)" unless strictly necessary.
+
+
+
+This is all the memory you have in this game including each action and its corresponding observations: 
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a countertop 1, a garbagecan 1, a handtowelholder 1, a sinkbasin 2, a sinkbasin 1, a toilet 1, a toiletpaperhanger 1, and a towelholder 1.
+
+
+You have already generated df and pf files according to the observations.
+This is previous domain file: 
+(define (domain alfworld)
+  (:requirements :strips :typing)
+  (:types
+    object receptacle microwaveReceptacle fridgeReceptacle
+  )
+  (:predicates
+    (at ?loc - receptacle)
+    (object-at ?obj - object ?loc - receptacle)
+    (holding ?obj - object)
+    (closed ?r - receptacle)
+    (opened ?r - receptacle)
+    (used ?o - object)
+    (heated ?o - object)
+    (clean ?o - object)
+    (cooled ?o - object)
+    (sliced ?o - object)
+  )
+
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (at ?from)
+    :effect (and (not (at ?from)) (at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (closed ?r)
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (opened ?r)
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r) (opened ?r))
+    :effect (and (holding ?o) (not (object-at ?o ?r)))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (holding ?o) (opened ?r))
+    :effect (and (object-at ?o ?r) (not (holding ?o)))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (holding ?o)
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - microwaveReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (clean ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - fridgeReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - object)
+    :precondition (and (at ?r) (object-at ?co ?r) (holding ?sharp_o))
+    :effect (sliced ?co)
+  )
+)
+
+This is previous problem file: 
+(define (problem alfworld-problem)
+  (:domain alfworld)
+  (:objects
+    spraybottle - object
+    cabinet1 cabinet2 cabinet3 cabinet4 countertop1 garbagecan1 handtowelholder1 sinkbasin1 sinkbasin2 toilet1 toiletpaperhanger1 towelholder1 - receptacle
+  )
+  (:init
+    (at cabinet1)
+    (object-at spraybottle cabinet1)
+    (opened cabinet1) ; cabinet1 is non-openable, so it starts opened
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (opened countertop1)
+    (opened garbagecan1)
+    (opened handtowelholder1)
+    (opened sinkbasin1)
+    (opened sinkbasin2)
+    (opened toilet1)
+    (opened toiletpaperhanger1)
+    (opened towelholder1)
+  )
+  (:goal (and (object-at spraybottle countertop1)))
+)
+
+
+
+
+Based on the df and pf that you generated, the external solver could generate a plan but after simulating in the game environment, it caused those errors: 
+In this step, you take the following actions and observations from those actions:
+Action: take spraybottle from cabinet 1
+Nothing happens.
+
+
+This is the action you take and got something wrong: take spraybottle from cabinet 1. You are trying to take something from a receptacle. You should first go to this receptacle to take the object. But if you have already go to this receptacle and still seeing this error message, it means that this receptacle doesn't have this object. You should go to other receptacle to find your aim object. Remember do not assume you can take the object from the receptable but should always set the initial goal as finding that aim object.
+
+
+
+Now rewrite both the domain and problem files with the minimal fix.
+
+=== END PROMPT ===
+=== RAW LLM RESPONSE ===
+{
+  "df": "(define (domain alfworld)\n  (:requirements :strips :typing)\n  (:types\n    object receptacle microwaveReceptacle fridgeReceptacle\n  )\n  (:predicates\n    (at ?loc - receptacle)\n    (object-at ?obj - object ?loc - receptacle)\n    (holding ?obj - object)\n    (closed ?r - receptacle)\n    (opened ?r - receptacle)\n    (used ?o - object)\n    (heated ?o - object)\n    (clean ?o - object)\n    (cooled ?o - object)\n    (sliced ?o - object)\n  )\n\n  (:action GotoLocation\n    :parameters (?from - receptacle ?to - receptacle)\n    :precondition (at ?from)\n    :effect (and (not (at ?from)) (at ?to))\n  )\n\n  (:action OpenObject\n    :parameters (?r - receptacle)\n    :precondition (closed ?r)\n    :effect (and (not (closed ?r)) (opened ?r))\n  )\n\n  (:action CloseObject\n    :parameters (?r - receptacle)\n    :precondition (opened ?r)\n    :effect (and (not (opened ?r)) (closed ?r))\n  )\n\n  (:action PickupObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (object-at ?o ?r) (opened ?r))\n    :effect (and (holding ?o) (not (object-at ?o ?r)))\n  )\n\n  (:action PutObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (holding ?o) (opened ?r))\n    :effect (and (object-at ?o ?r) (not (holding ?o)))\n  )\n\n  (:action useObject\n    :parameters (?o - object)\n    :precondition (holding ?o)\n    :effect (used ?o)\n  )\n\n  (:action HeatObject\n    :parameters (?o - object ?r - microwaveReceptacle)\n    :precondition (and (at ?r) (object-at ?o ?r))\n    :effect (heated ?o)\n  )\n\n  (:action CleanObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (object-at ?o ?r))\n    :effect (clean ?o)\n  )\n\n  (:action CoolObject\n    :parameters (?o - object ?r - fridgeReceptacle)\n    :precondition (and (at ?r) (object-at ?o ?r))\n    :effect (cooled ?o)\n  )\n\n  (:action SliceObject\n    :parameters (?r - receptacle ?co - object ?sharp_o - object)\n    :precondition (and (at ?r) (object-at ?co ?r) (holding ?sharp_o))\n    :effect (sliced ?co)\n  )\n)",
+  "pf": "(define (problem alfworld-problem)\n  (:domain alfworld)\n  (:objects\n    spraybottle - object\n    cabinet1 cabinet2 cabinet3 cabinet4 countertop1 garbagecan1 handtowelholder1 sinkbasin1 sinkbasin2 toilet1 toiletpaperhanger1 towelholder1 - receptacle\n  )\n  (:init\n    (at cabinet1)\n    ; spraybottle's location is unknown since previous attempt to take it from cabinet1 failed\n    (opened cabinet1) ; cabinet1 is non-openable, so it starts opened\n    (closed cabinet2)\n    (closed cabinet3)\n    (closed cabinet4)\n    (opened countertop1)\n    (opened garbagecan1)\n    (opened handtowelholder1)\n    (opened sinkbasin1)\n    (opened sinkbasin2)\n    (opened toilet1)\n    (opened toiletpaperhanger1)\n    (opened towelholder1)\n  )\n  (:goal (and (object-at spraybottle countertop1)))\n)"
+}
+=== END RESPONSE ===
+Generated df and pf:
+(define (domain alfworld)
+  (:requirements :strips :typing)
+  (:types
+    object receptacle microwaveReceptacle fridgeReceptacle
+  )
+  (:predicates
+    (at ?loc - receptacle)
+    (object-at ?obj - object ?loc - receptacle)
+    (holding ?obj - object)
+    (closed ?r - receptacle)
+    (opened ?r - receptacle)
+    (used ?o - object)
+    (heated ?o - object)
+    (clean ?o - object)
+    (cooled ?o - object)
+    (sliced ?o - object)
+  )
+
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (at ?from)
+    :effect (and (not (at ?from)) (at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (closed ?r)
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (opened ?r)
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r) (opened ?r))
+    :effect (and (holding ?o) (not (object-at ?o ?r)))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (holding ?o) (opened ?r))
+    :effect (and (object-at ?o ?r) (not (holding ?o)))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (holding ?o)
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - microwaveReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (clean ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - fridgeReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - object)
+    :precondition (and (at ?r) (object-at ?co ?r) (holding ?sharp_o))
+    :effect (sliced ?co)
+  )
+)
+(define (problem alfworld-problem)
+  (:domain alfworld)
+  (:objects
+    spraybottle - object
+    cabinet1 cabinet2 cabinet3 cabinet4 countertop1 garbagecan1 handtowelholder1 sinkbasin1 sinkbasin2 toilet1 toiletpaperhanger1 towelholder1 - receptacle
+  )
+  (:init
+    (at cabinet1)
+    ; spraybottle's location is unknown since previous attempt to take it from cabinet1 failed
+    (opened cabinet1) ; cabinet1 is non-openable, so it starts opened
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (opened countertop1)
+    (opened garbagecan1)
+    (opened handtowelholder1)
+    (opened sinkbasin1)
+    (opened sinkbasin2)
+    (opened toilet1)
+    (opened toiletpaperhanger1)
+    (opened towelholder1)
+  )
+  (:goal (and (object-at spraybottle countertop1)))
+)
+Actions: None
+Error: No actions generated despite having PDDL
+
+----Larger Loop No. 3----
+successful_actions: []
+Small Loop, action_queue: []
+=== PROMPT SENT TO LLM ===
+Please provide the output in strict JSON format, without any additional text or explanation, including a PDDL domain file as 'df' and a PDDL problem file as 'pf'. 
+    The format should strictly be:
+        {{
+        "df": "...",
+        "pf": "..."
+        }}
+
+
+You are in a partially observable ALFWorld environment.
+You must build/update a PDDL domain file (df) and problem file (pf) from ONLY the observations you have seen.
+
+Task goal (natural language):
+Your task is to: put some spraybottle on countertop.
+
+Latest observation summary:
+Action: take spraybottle from cabinet 1
+Nothing happens.
+
+
+Valid actions you are currently allowed to take:
+['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to countertop 1', 'go to garbagecan 1', 'go to handtowelholder 1', 'go to sinkbasin 1', 'go to sinkbasin 2', 'go to toilet 1', 'go to toiletpaperhanger 1', 'go to towelholder 1']
+
+The following actions are allowed: 
+    1. go to a receptacle
+        :action GotoLocation
+        :parameters (?from - receptacle ?to - receptacle)
+    2. open a receptacle if it is closed
+        :action OpenObject
+        :parameters (?r - receptacle)
+    3. close a receptacle
+        :action CloseObject
+        :parameters (?r - receptacle)
+    4. take an object from another receptacle
+        :action PickupObject
+        :parameters (?o - object ?r - receptacle)
+    5. put object into/on/in another receptacle
+        :action PutObject
+        :parameters (?o - object ?r - receptacle)
+    6. using an object/receptacle by turning it on/off with a switch
+        :action useObject
+        :parameters (?o - object)
+    7. heat an object using a receptacle
+        :action HeatObject
+        :parameters (?o - object ?r - microwaveReceptacle)
+    8. clean an object using a receptacle
+        :action CleanObject
+        :parameters (?o - object ?r - receptacle)
+    9. cool an object using a receptacle
+        :action CoolObject
+        :parameters (?o - object ?r - fridgeReceptacle)
+    10. slice an object using a sharp object
+        :action SliceObject
+        :parameters (?r - receptacle ?co - object ?sharp_o - object)
+
+Guidelines:
+- Do NOT invent objects or receptacles that were not observed.
+- If the task requires finding an object, your near-term goal can be "be at" an unvisited receptacle.
+- PF goal MUST be grounded (no variables, no quantifiers).
+- PF init should not use "(not ...)" unless strictly necessary.
+
+
+
+This is all the memory you have in this game including each action and its corresponding observations: 
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a countertop 1, a garbagecan 1, a handtowelholder 1, a sinkbasin 2, a sinkbasin 1, a toilet 1, a toiletpaperhanger 1, and a towelholder 1.
+
+
+You have already generated df and pf files according to the observations.
+This is previous domain file: 
+(define (domain alfworld)
+  (:requirements :strips :typing)
+  (:types
+    object receptacle microwaveReceptacle fridgeReceptacle
+  )
+  (:predicates
+    (at ?loc - receptacle)
+    (object-at ?obj - object ?loc - receptacle)
+    (holding ?obj - object)
+    (closed ?r - receptacle)
+    (opened ?r - receptacle)
+    (used ?o - object)
+    (heated ?o - object)
+    (clean ?o - object)
+    (cooled ?o - object)
+    (sliced ?o - object)
+  )
+
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (at ?from)
+    :effect (and (not (at ?from)) (at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (closed ?r)
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (opened ?r)
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r) (opened ?r))
+    :effect (and (holding ?o) (not (object-at ?o ?r)))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (holding ?o) (opened ?r))
+    :effect (and (object-at ?o ?r) (not (holding ?o)))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (holding ?o)
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - microwaveReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (clean ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - fridgeReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - object)
+    :precondition (and (at ?r) (object-at ?co ?r) (holding ?sharp_o))
+    :effect (sliced ?co)
+  )
+)
+
+This is previous problem file: 
+(define (problem alfworld-problem)
+  (:domain alfworld)
+  (:objects
+    spraybottle - object
+    cabinet1 cabinet2 cabinet3 cabinet4 countertop1 garbagecan1 handtowelholder1 sinkbasin1 sinkbasin2 toilet1 toiletpaperhanger1 towelholder1 - receptacle
+  )
+  (:init
+    (at cabinet1)
+    ; spraybottle's location is unknown since previous attempt to take it from cabinet1 failed
+    (opened cabinet1) ; cabinet1 is non-openable, so it starts opened
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (opened countertop1)
+    (opened garbagecan1)
+    (opened handtowelholder1)
+    (opened sinkbasin1)
+    (opened sinkbasin2)
+    (opened toilet1)
+    (opened toiletpaperhanger1)
+    (opened towelholder1)
+  )
+  (:goal (and (object-at spraybottle countertop1)))
+)
+
+
+
+
+Based on the df and pf that you generated, the external solver could generate a plan but after simulating in the game environment, it caused those errors: 
+In this step, you take the following actions and observations from those actions:
+Action: take spraybottle from cabinet 1
+Nothing happens.
+
+
+This is the action you take and got something wrong: take spraybottle from cabinet 1. You are trying to take something from a receptacle. You should first go to this receptacle to take the object. But if you have already go to this receptacle and still seeing this error message, it means that this receptacle doesn't have this object. You should go to other receptacle to find your aim object. Remember do not assume you can take the object from the receptable but should always set the initial goal as finding that aim object.
+
+
+
+Now rewrite both the domain and problem files with the minimal fix.
+
+=== END PROMPT ===
+=== RAW LLM RESPONSE ===
+{
+  "df": "(define (domain alfworld)\n  (:requirements :strips :typing)\n  (:types\n    object receptacle microwaveReceptacle fridgeReceptacle\n  )\n  (:predicates\n    (at ?loc - receptacle)\n    (object-at ?obj - object ?loc - receptacle)\n    (holding ?obj - object)\n    (closed ?r - receptacle)\n    (opened ?r - receptacle)\n    (used ?o - object)\n    (heated ?o - object)\n    (clean ?o - object)\n    (cooled ?o - object)\n    (sliced ?o - object)\n  )\n\n  (:action GotoLocation\n    :parameters (?from - receptacle ?to - receptacle)\n    :precondition (at ?from)\n    :effect (and (not (at ?from)) (at ?to))\n  )\n\n  (:action OpenObject\n    :parameters (?r - receptacle)\n    :precondition (closed ?r)\n    :effect (and (not (closed ?r)) (opened ?r))\n  )\n\n  (:action CloseObject\n    :parameters (?r - receptacle)\n    :precondition (opened ?r)\n    :effect (and (not (opened ?r)) (closed ?r))\n  )\n\n  (:action PickupObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (object-at ?o ?r) (opened ?r))\n    :effect (and (holding ?o) (not (object-at ?o ?r)))\n  )\n\n  (:action PutObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (holding ?o) (opened ?r))\n    :effect (and (object-at ?o ?r) (not (holding ?o)))\n  )\n\n  (:action useObject\n    :parameters (?o - object)\n    :precondition (holding ?o)\n    :effect (used ?o)\n  )\n\n  (:action HeatObject\n    :parameters (?o - object ?r - microwaveReceptacle)\n    :precondition (and (at ?r) (object-at ?o ?r))\n    :effect (heated ?o)\n  )\n\n  (:action CleanObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (object-at ?o ?r))\n    :effect (clean ?o)\n  )\n\n  (:action CoolObject\n    :parameters (?o - object ?r - fridgeReceptacle)\n    :precondition (and (at ?r) (object-at ?o ?r))\n    :effect (cooled ?o)\n  )\n\n  (:action SliceObject\n    :parameters (?r - receptacle ?co - object ?sharp_o - object)\n    :precondition (and (at ?r) (object-at ?co ?r) (holding ?sharp_o))\n    :effect (sliced ?co)\n  )\n)",
+  "pf": "(define (problem alfworld-problem)\n  (:domain alfworld)\n  (:objects\n    spraybottle - object\n    cabinet1 cabinet2 cabinet3 cabinet4 countertop1 garbagecan1 handtowelholder1 sinkbasin1 sinkbasin2 toilet1 toiletpaperhanger1 towelholder1 - receptacle\n  )\n  (:init\n    (at cabinet1)\n    (object-at spraybottle cabinet2) ; spraybottle is now in cabinet2 rather than cabinet1\n    (opened cabinet1)\n    (closed cabinet2)\n    (closed cabinet3)\n    (closed cabinet4)\n    (opened countertop1)\n    (opened garbagecan1)\n    (opened handtowelholder1)\n    (opened sinkbasin1)\n    (opened sinkbasin2)\n    (opened toilet1)\n    (opened toiletpaperhanger1)\n    (opened towelholder1)\n  )\n  (:goal (and (object-at spraybottle countertop1)))\n)"
+}
+=== END RESPONSE ===
+Generated df and pf:
+(define (domain alfworld)
+  (:requirements :strips :typing)
+  (:types
+    object receptacle microwaveReceptacle fridgeReceptacle
+  )
+  (:predicates
+    (at ?loc - receptacle)
+    (object-at ?obj - object ?loc - receptacle)
+    (holding ?obj - object)
+    (closed ?r - receptacle)
+    (opened ?r - receptacle)
+    (used ?o - object)
+    (heated ?o - object)
+    (clean ?o - object)
+    (cooled ?o - object)
+    (sliced ?o - object)
+  )
+
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (at ?from)
+    :effect (and (not (at ?from)) (at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (closed ?r)
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (opened ?r)
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r) (opened ?r))
+    :effect (and (holding ?o) (not (object-at ?o ?r)))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (holding ?o) (opened ?r))
+    :effect (and (object-at ?o ?r) (not (holding ?o)))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (holding ?o)
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - microwaveReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (clean ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - fridgeReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - object)
+    :precondition (and (at ?r) (object-at ?co ?r) (holding ?sharp_o))
+    :effect (sliced ?co)
+  )
+)
+(define (problem alfworld-problem)
+  (:domain alfworld)
+  (:objects
+    spraybottle - object
+    cabinet1 cabinet2 cabinet3 cabinet4 countertop1 garbagecan1 handtowelholder1 sinkbasin1 sinkbasin2 toilet1 toiletpaperhanger1 towelholder1 - receptacle
+  )
+  (:init
+    (at cabinet1)
+    (object-at spraybottle cabinet2) ; spraybottle is now in cabinet2 rather than cabinet1
+    (opened cabinet1)
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (opened countertop1)
+    (opened garbagecan1)
+    (opened handtowelholder1)
+    (opened sinkbasin1)
+    (opened sinkbasin2)
+    (opened toilet1)
+    (opened toiletpaperhanger1)
+    (opened towelholder1)
+  )
+  (:goal (and (object-at spraybottle countertop1)))
+)
+Actions: ['open cabinet 2', 'go to cabinet 2', 'take spraybottle from cabinet 2', 'go to countertop 1', 'move spraybottle to countertop 1']
+Current action_queue: ['open cabinet 2', 'go to cabinet 2', 'take spraybottle from cabinet 2', 'go to countertop 1', 'move spraybottle to countertop 1']
+> Action: open cabinet 2
+Nothing happens.
+
+After taking action 'open cabinet 2', valid actions: ['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to countertop 1', 'go to garbagecan 1', 'go to handtowelholder 1', 'go to sinkbasin 1', 'go to sinkbasin 2', 'go to toilet 1', 'go to toiletpaperhanger 1', 'go to towelholder 1']
+
+----Larger Loop No. 4----
+successful_actions: []
+Small Loop, action_queue: []
+=== PROMPT SENT TO LLM ===
+Please provide the output in strict JSON format, without any additional text or explanation, including a PDDL domain file as 'df' and a PDDL problem file as 'pf'. 
+    The format should strictly be:
+        {{
+        "df": "...",
+        "pf": "..."
+        }}
+
+
+You are in a partially observable ALFWorld environment.
+You must build/update a PDDL domain file (df) and problem file (pf) from ONLY the observations you have seen.
+
+Task goal (natural language):
+Your task is to: put some spraybottle on countertop.
+
+Latest observation summary:
+Action: open cabinet 2
+Nothing happens.
+
+
+Valid actions you are currently allowed to take:
+['go to cabinet 1', 'go to cabinet 2', 'go to cabinet 3', 'go to cabinet 4', 'go to countertop 1', 'go to garbagecan 1', 'go to handtowelholder 1', 'go to sinkbasin 1', 'go to sinkbasin 2', 'go to toilet 1', 'go to toiletpaperhanger 1', 'go to towelholder 1']
+
+The following actions are allowed: 
+    1. go to a receptacle
+        :action GotoLocation
+        :parameters (?from - receptacle ?to - receptacle)
+    2. open a receptacle if it is closed
+        :action OpenObject
+        :parameters (?r - receptacle)
+    3. close a receptacle
+        :action CloseObject
+        :parameters (?r - receptacle)
+    4. take an object from another receptacle
+        :action PickupObject
+        :parameters (?o - object ?r - receptacle)
+    5. put object into/on/in another receptacle
+        :action PutObject
+        :parameters (?o - object ?r - receptacle)
+    6. using an object/receptacle by turning it on/off with a switch
+        :action useObject
+        :parameters (?o - object)
+    7. heat an object using a receptacle
+        :action HeatObject
+        :parameters (?o - object ?r - microwaveReceptacle)
+    8. clean an object using a receptacle
+        :action CleanObject
+        :parameters (?o - object ?r - receptacle)
+    9. cool an object using a receptacle
+        :action CoolObject
+        :parameters (?o - object ?r - fridgeReceptacle)
+    10. slice an object using a sharp object
+        :action SliceObject
+        :parameters (?r - receptacle ?co - object ?sharp_o - object)
+
+Guidelines:
+- Do NOT invent objects or receptacles that were not observed.
+- If the task requires finding an object, your near-term goal can be "be at" an unvisited receptacle.
+- PF goal MUST be grounded (no variables, no quantifiers).
+- PF init should not use "(not ...)" unless strictly necessary.
+
+
+
+This is all the memory you have in this game including each action and its corresponding observations: 
+Action: look around
+-= Welcome to TextWorld, ALFRED! =-. You are in the middle of a room. Looking quickly around you, you see a cabinet 4, a cabinet 3, a cabinet 2, a cabinet 1, a countertop 1, a garbagecan 1, a handtowelholder 1, a sinkbasin 2, a sinkbasin 1, a toilet 1, a toiletpaperhanger 1, and a towelholder 1.
+
+
+You have already generated df and pf files according to the observations.
+This is previous domain file: 
+(define (domain alfworld)
+  (:requirements :strips :typing)
+  (:types
+    object receptacle microwaveReceptacle fridgeReceptacle
+  )
+  (:predicates
+    (at ?loc - receptacle)
+    (object-at ?obj - object ?loc - receptacle)
+    (holding ?obj - object)
+    (closed ?r - receptacle)
+    (opened ?r - receptacle)
+    (used ?o - object)
+    (heated ?o - object)
+    (clean ?o - object)
+    (cooled ?o - object)
+    (sliced ?o - object)
+  )
+
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (at ?from)
+    :effect (and (not (at ?from)) (at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (closed ?r)
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (opened ?r)
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r) (opened ?r))
+    :effect (and (holding ?o) (not (object-at ?o ?r)))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (holding ?o) (opened ?r))
+    :effect (and (object-at ?o ?r) (not (holding ?o)))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (holding ?o)
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - microwaveReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (clean ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - fridgeReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - object)
+    :precondition (and (at ?r) (object-at ?co ?r) (holding ?sharp_o))
+    :effect (sliced ?co)
+  )
+)
+
+This is previous problem file: 
+(define (problem alfworld-problem)
+  (:domain alfworld)
+  (:objects
+    spraybottle - object
+    cabinet1 cabinet2 cabinet3 cabinet4 countertop1 garbagecan1 handtowelholder1 sinkbasin1 sinkbasin2 toilet1 toiletpaperhanger1 towelholder1 - receptacle
+  )
+  (:init
+    (at cabinet1)
+    (object-at spraybottle cabinet2) ; spraybottle is now in cabinet2 rather than cabinet1
+    (opened cabinet1)
+    (closed cabinet2)
+    (closed cabinet3)
+    (closed cabinet4)
+    (opened countertop1)
+    (opened garbagecan1)
+    (opened handtowelholder1)
+    (opened sinkbasin1)
+    (opened sinkbasin2)
+    (opened toilet1)
+    (opened toiletpaperhanger1)
+    (opened towelholder1)
+  )
+  (:goal (and (object-at spraybottle countertop1)))
+)
+
+
+
+
+Based on the df and pf that you generated, the external solver could generate a plan but after simulating in the game environment, it caused those errors: 
+In this step, you take the following actions and observations from those actions:
+Action: open cabinet 2
+Nothing happens.
+
+
+This is the action you take and got something wrong: open cabinet 2. You are trying to open a receptacle but nothing happens. You should first go to this receptacle to open it. But if you have already go to this receptacle and still seeing this error message, it means that this receptacle cannot be opened and you can directly see objects after you go to it. Do not try to open it!!
+
+
+
+Now rewrite both the domain and problem files with the minimal fix.
+
+=== END PROMPT ===
+=== RAW LLM RESPONSE ===
+{
+  "df": "(define (domain alfworld)\n  (:requirements :strips :typing)\n  (:types\n    object receptacle microwaveReceptacle fridgeReceptacle\n  )\n  (:predicates\n    (at ?loc - receptacle)\n    (object-at ?obj - object ?loc - receptacle)\n    (holding ?obj - object)\n    (closed ?r - receptacle)\n    (opened ?r - receptacle)\n    (used ?o - object)\n    (heated ?o - object)\n    (clean ?o - object)\n    (cooled ?o - object)\n    (sliced ?o - object)\n  )\n\n  (:action GotoLocation\n    :parameters (?from - receptacle ?to - receptacle)\n    :precondition (at ?from)\n    :effect (and (not (at ?from)) (at ?to))\n  )\n\n  (:action OpenObject\n    :parameters (?r - receptacle)\n    :precondition (closed ?r)\n    :effect (and (not (closed ?r)) (opened ?r))\n  )\n\n  (:action CloseObject\n    :parameters (?r - receptacle)\n    :precondition (opened ?r)\n    :effect (and (not (opened ?r)) (closed ?r))\n  )\n\n  (:action PickupObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (object-at ?o ?r) (opened ?r))\n    :effect (and (holding ?o) (not (object-at ?o ?r)))\n  )\n\n  (:action PutObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (holding ?o) (opened ?r))\n    :effect (and (object-at ?o ?r) (not (holding ?o)))\n  )\n\n  (:action useObject\n    :parameters (?o - object)\n    :precondition (holding ?o)\n    :effect (used ?o)\n  )\n\n  (:action HeatObject\n    :parameters (?o - object ?r - microwaveReceptacle)\n    :precondition (and (at ?r) (object-at ?o ?r))\n    :effect (heated ?o)\n  )\n\n  (:action CleanObject\n    :parameters (?o - object ?r - receptacle)\n    :precondition (and (at ?r) (object-at ?o ?r))\n    :effect (clean ?o)\n  )\n\n  (:action CoolObject\n    :parameters (?o - object ?r - fridgeReceptacle)\n    :precondition (and (at ?r) (object-at ?o ?r))\n    :effect (cooled ?o)\n  )\n\n  (:action SliceObject\n    :parameters (?r - receptacle ?co - object ?sharp_o - object)\n    :precondition (and (at ?r) (object-at ?co ?r) (holding ?sharp_o))\n    :effect (sliced ?co)\n  )\n)",
+  "pf": "(define (problem alfworld-problem)\n  (:domain alfworld)\n  (:objects\n    spraybottle - object\n    cabinet1 cabinet2 cabinet3 cabinet4 countertop1 garbagecan1 handtowelholder1 sinkbasin1 sinkbasin2 toilet1 toiletpaperhanger1 towelholder1 - receptacle\n  )\n  (:init\n    (at cabinet1)\n    (object-at spraybottle cabinet2) ; spraybottle is in cabinet2\n    (opened cabinet1)\n    (opened cabinet2) ; cabinet2 cannot be opened, so it is already open\n    (closed cabinet3)\n    (closed cabinet4)\n    (opened countertop1)\n    (opened garbagecan1)\n    (opened handtowelholder1)\n    (opened sinkbasin1)\n    (opened sinkbasin2)\n    (opened toilet1)\n    (opened toiletpaperhanger1)\n    (opened towelholder1)\n  )\n  (:goal (and (object-at spraybottle countertop1)))\n)"
+}
+=== END RESPONSE ===
+Generated df and pf:
+(define (domain alfworld)
+  (:requirements :strips :typing)
+  (:types
+    object receptacle microwaveReceptacle fridgeReceptacle
+  )
+  (:predicates
+    (at ?loc - receptacle)
+    (object-at ?obj - object ?loc - receptacle)
+    (holding ?obj - object)
+    (closed ?r - receptacle)
+    (opened ?r - receptacle)
+    (used ?o - object)
+    (heated ?o - object)
+    (clean ?o - object)
+    (cooled ?o - object)
+    (sliced ?o - object)
+  )
+
+  (:action GotoLocation
+    :parameters (?from - receptacle ?to - receptacle)
+    :precondition (at ?from)
+    :effect (and (not (at ?from)) (at ?to))
+  )
+
+  (:action OpenObject
+    :parameters (?r - receptacle)
+    :precondition (closed ?r)
+    :effect (and (not (closed ?r)) (opened ?r))
+  )
+
+  (:action CloseObject
+    :parameters (?r - receptacle)
+    :precondition (opened ?r)
+    :effect (and (not (opened ?r)) (closed ?r))
+  )
+
+  (:action PickupObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r) (opened ?r))
+    :effect (and (holding ?o) (not (object-at ?o ?r)))
+  )
+
+  (:action PutObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (holding ?o) (opened ?r))
+    :effect (and (object-at ?o ?r) (not (holding ?o)))
+  )
+
+  (:action useObject
+    :parameters (?o - object)
+    :precondition (holding ?o)
+    :effect (used ?o)
+  )
+
+  (:action HeatObject
+    :parameters (?o - object ?r - microwaveReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (heated ?o)
+  )
+
+  (:action CleanObject
+    :parameters (?o - object ?r - receptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (clean ?o)
+  )
+
+  (:action CoolObject
+    :parameters (?o - object ?r - fridgeReceptacle)
+    :precondition (and (at ?r) (object-at ?o ?r))
+    :effect (cooled ?o)
+  )
+
+  (:action SliceObject
+    :parameters (?r - receptacle ?co - object ?sharp_o - object)
+    :precondition (and (at ?r) (object-at ?co ?r) (holding ?sharp_o))
+    :effect (sliced ?co)
+  )
+)
+(define (problem alfworld-problem)
+  (:domain alfworld)
+  (:objects
+    spraybottle - object
+    cabinet1 cabinet2 cabinet3 cabinet4 countertop1 garbagecan1 handtowelholder1 sinkbasin1 sinkbasin2 toilet1 toiletpaperhanger1 towelholder1 - receptacle
+  )
+  (:init
+    (at cabinet1)
+    (object-at spraybottle cabinet2) ; spraybottle is in cabinet2
+    (opened cabinet1)
+    (opened cabinet2) ; cabinet2 cannot be opened, so it is already open
+    (closed cabinet3)
+    (closed cabinet4)
+    (opened countertop1)
+    (opened garbagecan1)
+    (opened handtowelholder1)
+    (opened sinkbasin1)
+    (opened sinkbasin2)
+    (opened toilet1)
+    (opened toiletpaperhanger1)
+    (opened towelholder1)
+  )
+  (:goal (and (object-at spraybottle countertop1)))
+)
+Actions: ['go to cabinet 2', 'take spraybottle from cabinet 2', 'go to countertop 1', 'move spraybottle to countertop 1']
+Current action_queue: ['go to cabinet 2', 'take spraybottle from cabinet 2', 'go to countertop 1', 'move spraybottle to countertop 1']
+> Action: go to cabinet 2
+You arrive at cabinet 2. The cabinet 2 is closed.
+
+After taking action 'go to cabinet 2', valid actions: ['examine cabinet 2', 'go to cabinet 1', 'go to cabinet 3', 'go to cabinet 4', 'go to countertop 1', 'go to garbagecan 1', 'go to handtowelholder 1', 'go to sinkbasin 1', 'go to sinkbasin 2', 'go to toilet 1', 'go to toiletpaperhanger 1', 'go to towelholder 1', 'open cabinet 2']
+Small Loop, action_queue: ['take spraybottle from cabinet 2', 'go to countertop 1', 'move spraybottle to countertop 1']
+Current action_queue: ['take spraybottle from cabinet 2', 'go to countertop 1', 'move spraybottle to countertop 1']
+> Action: take spraybottle from cabinet 2
+Nothing happens.
+
+After taking action 'take spraybottle from cabinet 2', valid actions: ['examine cabinet 2', 'go to cabinet 1', 'go to cabinet 3', 'go to cabinet 4', 'go to countertop 1', 'go to garbagecan 1', 'go to handtowelholder 1', 'go to sinkbasin 1', 'go to sinkbasin 2', 'go to toilet 1', 'go to toiletpaperhanger 1', 'go to towelholder 1', 'open cabinet 2']

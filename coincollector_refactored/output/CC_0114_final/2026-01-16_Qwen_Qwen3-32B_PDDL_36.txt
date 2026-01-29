@@ -1,0 +1,786 @@
+Observations: You are in the kitchen. In one part of the room you see a stove. There is also an oven. You also see a fridge that is closed. In another part of the room you see a counter, that has nothing on it. In one part of the room you see a kitchen cupboard that is closed. There is also a cutlery drawer that is closed. You also see a trash can that is closed. In another part of the room you see a dishwasher that is closed. In one part of the room you see a dining chair, that has nothing on it. 
+To the North you see a closed screen door. To the South you see a closed plain door. To the East you see a closed wood door.  
+Gold path: ['look around', 'open door to north', 'open door to south', 'open door to east', 'move east', 'open door to north', 'move west', 'move south', 'move north', 'move south', 'move north', 'move north', 'open door to east', 'move west', 'open door to south', 'move south', 'move north', 'move east', 'move north', 'move south', 'move east', 'take coin'] 
+Valid Actions: ['move east', 'move north', 'move south', 'move west', 'open door to east', 'open door to north', 'open door to south', 'open door to west'] 
+taskDescription: Your task is to search the environment and find the coin.  Once you find the coin, take it. 
+brief_obs: Action: look around
+You are in the kitchen. To the North you see a closed screen door. To the South you see a closed plain door. To the East you see a closed wood door. 
+ 
+
+
+====Step 0==== 
+
+----Larger Loop No. 0---- 
+successful_actions: [] 
+Small Loop, action_queue: [] 
+--Small Loop--: 0 
+=== PROMPT SENT TO LLM ===
+
+    Please provide the output in strict JSON format, without any additional text or explanation, including a PDDL domain file as 'df' and a PDDL problem file as 'pf'. 
+    The format should strictly be:
+        {
+        "df": "...",
+        "pf": "..."
+        }
+
+
+You are in a partially observable environment that you explore step by step. You must build and update PDDL files of the environment based on only your observations.
+Do not create something not appeared in the observations and also do not miss any observations e.g. through closed doors you may assume a room behind.
+Do not assume that there will be a door connecting rooms.
+
+Your task is always to keep exploration and go to a location you have not visited yet.
+In other words, your goal should go to other not visited location.
+If you enter a room, make sure you put everything you observed such as the direction in the problem file.
+
+Here are your current observations: Action: look around
+You are in the kitchen. To the North you see a closed screen door. To the South you see a closed plain door. To the East you see a closed wood door. 
+
+Here are some valid actions you can take: ['move east', 'move north', 'move south', 'move west', 'open door to east', 'open door to north', 'open door to south', 'open door to west']
+
+You should generate df and pf that strictly follow these action schemas. There are in total 2 actions, that should exactly be the following two:
+1. :action open-door
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+2. :action move
+    :parameters (?from - location ?to - location ?dir - direction)
+You should have a goal in the problem file like this:
+(:goal
+    (at ?location)
+)
+
+
+Note:
+- In problem file's init, you shouldn't have "not ()" but only the single status.
+- In problem file's goal, ?location must be grounded, no variables or quantifiers.
+
+
+=== END PROMPT ===
+=== RAW LLM RESPONSE ===
+{
+  "df": "(define (domain exploration)\n  (:predicates\n    (at ?l - location)\n    (closed ?l1 - location ?d - direction ?l2 - location)\n    (open ?l1 - location ?d - direction ?l2 - location)\n  )\n  (:action open-door\n    :parameters (?loc1 - location ?loc2 - location ?dir - direction)\n    :precondition (and (at ?loc1) (closed ?loc1 ?dir ?loc2))\n    :effect (and (open ?loc1 ?dir ?loc2) (not (closed ?loc1 ?dir ?loc2)))\n  )\n  (:action move\n    :parameters (?from - location ?to - location ?dir - direction)\n    :precondition (and (at ?from) (open ?from ?dir ?to))\n    :effect (and (at ?to) (not (at ?from)))\n  )\n)\n",
+  "pf": "(define (problem exploration-problem)\n  (:domain exploration)\n  (:objects\n    kitchen - location\n    screen - location\n    plain - location\n    wood - location\n    north - direction\n    south - direction\n    east - direction\n  )\n  (:init\n    (at kitchen)\n    (closed kitchen north screen)\n    (closed kitchen south plain)\n    (closed kitchen east wood)\n  )\n  (:goal\n    (at screen)\n  )\n)\n"
+}
+=== END RESPONSE ===
+Parsed df and pf: 
+ (define (domain exploration)
+  (:predicates
+    (at ?l - location)
+    (closed ?l1 - location ?d - direction ?l2 - location)
+    (open ?l1 - location ?d - direction ?l2 - location)
+  )
+  (:action open-door
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+    :precondition (and (at ?loc1) (closed ?loc1 ?dir ?loc2))
+    :effect (and (open ?loc1 ?dir ?loc2) (not (closed ?loc1 ?dir ?loc2)))
+  )
+  (:action move
+    :parameters (?from - location ?to - location ?dir - direction)
+    :precondition (and (at ?from) (open ?from ?dir ?to))
+    :effect (and (at ?to) (not (at ?from)))
+  )
+)
+ 
+ (define (problem exploration-problem)
+  (:domain exploration)
+  (:objects
+    kitchen - location
+    screen - location
+    plain - location
+    wood - location
+    north - direction
+    south - direction
+    east - direction
+  )
+  (:init
+    (at kitchen)
+    (closed kitchen north screen)
+    (closed kitchen south plain)
+    (closed kitchen east wood)
+  )
+  (:goal
+    (at screen)
+  )
+)
+ 
+Actions from solver(df, pf): ['open door to north', 'move north'] 
+Raw plan text: (OPEN-DOOR KITCHEN SCREEN NORTH)
+(MOVE KITCHEN SCREEN NORTH)
+ 
+Current action_queue: ['open door to north', 'move north'] 
+> open door to north 
+ You open the screen door, revealing the backyard.  
+Small Loop, action_queue: ['move north'] 
+Current action_queue: ['move north'] 
+> move north 
+ You are in the backyard. In one part of the room you see a barbeque. There is also a workbench, that has nothing on it. You also see a patio chair, that has nothing on it. In another part of the room you see a patio table, that has nothing on it. In one part of the room you see a clothes line, that has nothing on it. There is also a garden, that has nothing on it. 
+To the North you see the driveway. Through an open screen door, to the South you see the kitchen. To the East you see a closed sliding patio door. To the West you see the street.  
+
+
+====Step 1==== 
+
+----Larger Loop No. 0---- 
+successful_actions: ['open door to north', 'move north'] 
+Small Loop, action_queue: [] 
+--Small Loop--: 0 
+=== PROMPT SENT TO LLM ===
+
+    Please provide the output in strict JSON format, without any additional text or explanation, including a PDDL domain file as 'df' and a PDDL problem file as 'pf'. 
+    The format should strictly be:
+        {
+        "df": "...",
+        "pf": "..."
+        }
+
+
+You are in a partially observable environment that you explore step by step. You must build and update PDDL files of the environment based on only your observations.
+Do not create something not appeared in the observations and also do not miss any observations e.g. through closed doors you may assume a room behind.
+Do not assume that there will be a door connecting rooms.
+
+Your task is always to keep exploration and go to a location you have not visited yet.
+In other words, your goal should go to other not visited location.
+If you enter a room, make sure you put everything you observed such as the direction in the problem file.
+
+Here are your current observations: Action: open door to north
+You open the screen door, revealing the backyard. 
+
+Action: move north
+You are in the backyard. To the North you see the driveway. Through an open screen door, to the South you see the kitchen. To the East you see a closed sliding patio door. To the West you see the street. 
+
+Here are some valid actions you can take: ['move east', 'move north', 'move south', 'move west', 'open door to east', 'open door to north', 'open door to south', 'open door to west']
+
+You should generate df and pf that strictly follow these action schemas. There are in total 2 actions, that should exactly be the following two:
+1. :action open-door
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+2. :action move
+    :parameters (?from - location ?to - location ?dir - direction)
+You should have a goal in the problem file like this:
+(:goal
+    (at ?location)
+)
+
+
+Note:
+- In problem file's init, you shouldn't have "not ()" but only the single status.
+- In problem file's goal, ?location must be grounded, no variables or quantifiers.
+
+
+This is all the memory you have in this game including each action and its corresponding observations: 
+Action: look around
+You are in the kitchen. To the North you see a closed screen door. To the South you see a closed plain door. To the East you see a closed wood door. 
+Action: open door to north
+You open the screen door, revealing the backyard. 
+Action: move north
+You are in the backyard. To the North you see the driveway. Through an open screen door, to the South you see the kitchen. To the East you see a closed sliding patio door. To the West you see the street. 
+
+
+You have already generated df and pf files according to the observations.
+This is previous domain file: 
+(define (domain exploration)
+  (:predicates
+    (at ?l - location)
+    (closed ?l1 - location ?d - direction ?l2 - location)
+    (open ?l1 - location ?d - direction ?l2 - location)
+  )
+  (:action open-door
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+    :precondition (and (at ?loc1) (closed ?loc1 ?dir ?loc2))
+    :effect (and (open ?loc1 ?dir ?loc2) (not (closed ?loc1 ?dir ?loc2)))
+  )
+  (:action move
+    :parameters (?from - location ?to - location ?dir - direction)
+    :precondition (and (at ?from) (open ?from ?dir ?to))
+    :effect (and (at ?to) (not (at ?from)))
+  )
+)
+
+
+This is previous problem file: 
+(define (problem exploration-problem)
+  (:domain exploration)
+  (:objects
+    kitchen - location
+    screen - location
+    plain - location
+    wood - location
+    north - direction
+    south - direction
+    east - direction
+  )
+  (:init
+    (at kitchen)
+    (closed kitchen north screen)
+    (closed kitchen south plain)
+    (closed kitchen east wood)
+  )
+  (:goal
+    (at screen)
+  )
+)
+
+
+
+Now generate updated files based on the new observations.
+
+=== END PROMPT ===
+=== RAW LLM RESPONSE ===
+{
+  "df": "(define (domain exploration)\n  (:predicates\n    (at ?l - location)\n    (closed ?l1 - location ?d - direction ?l2 - location)\n    (open ?l1 - location ?d - direction ?l2 - location)\n  )\n  (:action open-door\n    :parameters (?loc1 - location ?loc2 - location ?dir - direction)\n    :precondition (and (at ?loc1) (closed ?loc1 ?dir ?loc2))\n    :effect (and (open ?loc1 ?dir ?loc2) (not (closed ?loc1 ?dir ?loc2)))\n  )\n  (:action move\n    :parameters (?from - location ?to - location ?dir - direction)\n    :precondition (and (at ?from) (open ?from ?dir ?to))\n    :effect (and (at ?to) (not (at ?from)))\n  )\n)",
+  "pf": "(define (problem exploration-problem)\n  (:domain exploration)\n  (:objects\n    kitchen - location\n    screen - location\n    plain - location\n    wood - location\n    driveway - location\n    street - location\n    sliding-patio-door - location\n    north - direction\n    south - direction\n    east - direction\n    west - direction\n  )\n  (:init\n    (at screen)\n    (open screen south kitchen)\n    (open screen north driveway)\n    (open screen west street)\n    (closed screen east sliding-patio-door)\n  )\n  (:goal\n    (at driveway)\n  )\n)"
+}
+=== END RESPONSE ===
+Parsed df and pf: 
+ (define (domain exploration)
+  (:predicates
+    (at ?l - location)
+    (closed ?l1 - location ?d - direction ?l2 - location)
+    (open ?l1 - location ?d - direction ?l2 - location)
+  )
+  (:action open-door
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+    :precondition (and (at ?loc1) (closed ?loc1 ?dir ?loc2))
+    :effect (and (open ?loc1 ?dir ?loc2) (not (closed ?loc1 ?dir ?loc2)))
+  )
+  (:action move
+    :parameters (?from - location ?to - location ?dir - direction)
+    :precondition (and (at ?from) (open ?from ?dir ?to))
+    :effect (and (at ?to) (not (at ?from)))
+  )
+) 
+ (define (problem exploration-problem)
+  (:domain exploration)
+  (:objects
+    kitchen - location
+    screen - location
+    plain - location
+    wood - location
+    driveway - location
+    street - location
+    sliding-patio-door - location
+    north - direction
+    south - direction
+    east - direction
+    west - direction
+  )
+  (:init
+    (at screen)
+    (open screen south kitchen)
+    (open screen north driveway)
+    (open screen west street)
+    (closed screen east sliding-patio-door)
+  )
+  (:goal
+    (at driveway)
+  )
+) 
+Actions from solver(df, pf): ['move north'] 
+Raw plan text: (MOVE SCREEN DRIVEWAY NORTH)
+ 
+Current action_queue: ['move north'] 
+> move north 
+ You are in the driveway. 
+To the South you see the backyard.  
+
+
+====Step 2==== 
+
+----Larger Loop No. 0---- 
+successful_actions: ['open door to north', 'move north', 'move north'] 
+Small Loop, action_queue: [] 
+--Small Loop--: 0 
+=== PROMPT SENT TO LLM ===
+
+    Please provide the output in strict JSON format, without any additional text or explanation, including a PDDL domain file as 'df' and a PDDL problem file as 'pf'. 
+    The format should strictly be:
+        {
+        "df": "...",
+        "pf": "..."
+        }
+
+
+You are in a partially observable environment that you explore step by step. You must build and update PDDL files of the environment based on only your observations.
+Do not create something not appeared in the observations and also do not miss any observations e.g. through closed doors you may assume a room behind.
+Do not assume that there will be a door connecting rooms.
+
+Your task is always to keep exploration and go to a location you have not visited yet.
+In other words, your goal should go to other not visited location.
+If you enter a room, make sure you put everything you observed such as the direction in the problem file.
+
+Here are your current observations: Action: move north
+You are in the driveway. To the South you see the backyard. 
+
+Here are some valid actions you can take: ['move east', 'move north', 'move south', 'move west', 'open door to east', 'open door to north', 'open door to south', 'open door to west']
+
+You should generate df and pf that strictly follow these action schemas. There are in total 2 actions, that should exactly be the following two:
+1. :action open-door
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+2. :action move
+    :parameters (?from - location ?to - location ?dir - direction)
+You should have a goal in the problem file like this:
+(:goal
+    (at ?location)
+)
+
+
+Note:
+- In problem file's init, you shouldn't have "not ()" but only the single status.
+- In problem file's goal, ?location must be grounded, no variables or quantifiers.
+
+
+This is all the memory you have in this game including each action and its corresponding observations: 
+Action: look around
+You are in the kitchen. To the North you see a closed screen door. To the South you see a closed plain door. To the East you see a closed wood door. 
+Action: open door to north
+You open the screen door, revealing the backyard. 
+Action: move north
+You are in the backyard. To the North you see the driveway. Through an open screen door, to the South you see the kitchen. To the East you see a closed sliding patio door. To the West you see the street. 
+Action: move north
+You are in the driveway. To the South you see the backyard. 
+
+
+You have already generated df and pf files according to the observations.
+This is previous domain file: 
+(define (domain exploration)
+  (:predicates
+    (at ?l - location)
+    (closed ?l1 - location ?d - direction ?l2 - location)
+    (open ?l1 - location ?d - direction ?l2 - location)
+  )
+  (:action open-door
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+    :precondition (and (at ?loc1) (closed ?loc1 ?dir ?loc2))
+    :effect (and (open ?loc1 ?dir ?loc2) (not (closed ?loc1 ?dir ?loc2)))
+  )
+  (:action move
+    :parameters (?from - location ?to - location ?dir - direction)
+    :precondition (and (at ?from) (open ?from ?dir ?to))
+    :effect (and (at ?to) (not (at ?from)))
+  )
+)
+
+This is previous problem file: 
+(define (problem exploration-problem)
+  (:domain exploration)
+  (:objects
+    kitchen - location
+    screen - location
+    plain - location
+    wood - location
+    driveway - location
+    street - location
+    sliding-patio-door - location
+    north - direction
+    south - direction
+    east - direction
+    west - direction
+  )
+  (:init
+    (at screen)
+    (open screen south kitchen)
+    (open screen north driveway)
+    (open screen west street)
+    (closed screen east sliding-patio-door)
+  )
+  (:goal
+    (at driveway)
+  )
+)
+
+
+Now generate updated files based on the new observations.
+
+=== END PROMPT ===
+=== RAW LLM RESPONSE ===
+{
+  "df": "(define (domain exploration)\n  (:predicates\n    (at ?l - location)\n    (closed ?l1 - location ?d - direction ?l2 - location)\n    (open ?l1 - location ?d - direction ?l2 - location)\n  )\n  (:action open-door\n    :parameters (?loc1 - location ?loc2 - location ?dir - direction)\n    :precondition (and (at ?loc1) (closed ?loc1 ?dir ?loc2))\n    :effect (and (open ?loc1 ?dir ?loc2) (not (closed ?loc1 ?dir ?loc2)))\n  )\n  (:action move\n    :parameters (?from - location ?to - location ?dir - direction)\n    :precondition (and (at ?from) (open ?from ?dir ?to))\n    :effect (and (at ?to) (not (at ?from)))\n  )\n)",
+  "pf": "(define (problem exploration-problem)\n  (:domain exploration)\n  (:objects\n    kitchen - location\n    screen - location\n    plain - location\n    wood - location\n    driveway - location\n    street - location\n    sliding-patio-door - location\n    north - direction\n    south - direction\n    east - direction\n    west - direction\n  )\n  (:init\n    (at driveway)\n    (open screen south kitchen)\n    (open screen north driveway)\n    (open screen west street)\n    (closed screen east sliding-patio-door)\n    (closed kitchen south plain)\n    (closed kitchen east wood)\n  )\n  (:goal\n    (at sliding-patio-door)\n  )\n)"
+}
+=== END RESPONSE ===
+Parsed df and pf: 
+ (define (domain exploration)
+  (:predicates
+    (at ?l - location)
+    (closed ?l1 - location ?d - direction ?l2 - location)
+    (open ?l1 - location ?d - direction ?l2 - location)
+  )
+  (:action open-door
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+    :precondition (and (at ?loc1) (closed ?loc1 ?dir ?loc2))
+    :effect (and (open ?loc1 ?dir ?loc2) (not (closed ?loc1 ?dir ?loc2)))
+  )
+  (:action move
+    :parameters (?from - location ?to - location ?dir - direction)
+    :precondition (and (at ?from) (open ?from ?dir ?to))
+    :effect (and (at ?to) (not (at ?from)))
+  )
+) 
+ (define (problem exploration-problem)
+  (:domain exploration)
+  (:objects
+    kitchen - location
+    screen - location
+    plain - location
+    wood - location
+    driveway - location
+    street - location
+    sliding-patio-door - location
+    north - direction
+    south - direction
+    east - direction
+    west - direction
+  )
+  (:init
+    (at driveway)
+    (open screen south kitchen)
+    (open screen north driveway)
+    (open screen west street)
+    (closed screen east sliding-patio-door)
+    (closed kitchen south plain)
+    (closed kitchen east wood)
+  )
+  (:goal
+    (at sliding-patio-door)
+  )
+) 
+Actions from solver(df, pf): None 
+Raw plan text:  
+--Small Loop--: 1 
+=== PROMPT SENT TO LLM ===
+
+    Please provide the output in strict JSON format, without any additional text or explanation, including a PDDL domain file as 'df' and a PDDL problem file as 'pf'. 
+    The format should strictly be:
+        {
+        "df": "...",
+        "pf": "..."
+        }
+
+
+You are in a partially observable environment that you explore step by step. You must build and update PDDL files of the environment based on only your observations.
+Do not create something not appeared in the observations and also do not miss any observations e.g. through closed doors you may assume a room behind.
+Do not assume that there will be a door connecting rooms.
+
+Your task is always to keep exploration and go to a location you have not visited yet.
+In other words, your goal should go to other not visited location.
+If you enter a room, make sure you put everything you observed such as the direction in the problem file.
+
+Here are your current observations: Action: move north
+You are in the driveway. To the South you see the backyard. 
+
+Here are some valid actions you can take: ['move east', 'move north', 'move south', 'move west', 'open door to east', 'open door to north', 'open door to south', 'open door to west']
+
+You should generate df and pf that strictly follow these action schemas. There are in total 2 actions, that should exactly be the following two:
+1. :action open-door
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+2. :action move
+    :parameters (?from - location ?to - location ?dir - direction)
+You should have a goal in the problem file like this:
+(:goal
+    (at ?location)
+)
+
+
+Note:
+- In problem file's init, you shouldn't have "not ()" but only the single status.
+- In problem file's goal, ?location must be grounded, no variables or quantifiers.
+
+
+This is all the memory you have in this game including each action and its corresponding observations: 
+Action: look around
+You are in the kitchen. To the North you see a closed screen door. To the South you see a closed plain door. To the East you see a closed wood door. 
+Action: open door to north
+You open the screen door, revealing the backyard. 
+Action: move north
+You are in the backyard. To the North you see the driveway. Through an open screen door, to the South you see the kitchen. To the East you see a closed sliding patio door. To the West you see the street. 
+Action: move north
+You are in the driveway. To the South you see the backyard. 
+
+
+You have already generated df and pf files according to the observations.
+This is previous domain file: 
+(define (domain exploration)
+  (:predicates
+    (at ?l - location)
+    (closed ?l1 - location ?d - direction ?l2 - location)
+    (open ?l1 - location ?d - direction ?l2 - location)
+  )
+  (:action open-door
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+    :precondition (and (at ?loc1) (closed ?loc1 ?dir ?loc2))
+    :effect (and (open ?loc1 ?dir ?loc2) (not (closed ?loc1 ?dir ?loc2)))
+  )
+  (:action move
+    :parameters (?from - location ?to - location ?dir - direction)
+    :precondition (and (at ?from) (open ?from ?dir ?to))
+    :effect (and (at ?to) (not (at ?from)))
+  )
+)
+
+This is previous problem file: 
+(define (problem exploration-problem)
+  (:domain exploration)
+  (:objects
+    kitchen - location
+    screen - location
+    plain - location
+    wood - location
+    driveway - location
+    street - location
+    sliding-patio-door - location
+    north - direction
+    south - direction
+    east - direction
+    west - direction
+  )
+  (:init
+    (at driveway)
+    (open screen south kitchen)
+    (open screen north driveway)
+    (open screen west street)
+    (closed screen east sliding-patio-door)
+    (closed kitchen south plain)
+    (closed kitchen east wood)
+  )
+  (:goal
+    (at sliding-patio-door)
+  )
+)
+
+
+You made some mistakes when generating those files. Here is the error message: 
+ff: goal can be simplified to FALSE. No plan will solve it
+
+
+Now update the files based on the new observations and feedback. Make minimal but effective changes to fix the issues.
+
+=== END PROMPT ===
+=== RAW LLM RESPONSE ===
+{
+  "df": "(define (domain exploration)\n  (:predicates\n    (at ?l - location)\n    (closed ?l1 - location ?d - direction ?l2 - location)\n    (open ?l1 - location ?d - direction ?l2 - location)\n  )\n  (:action open-door\n    :parameters (?loc1 - location ?loc2 - location ?dir - direction)\n    :precondition (and (at ?loc1) (closed ?loc1 ?dir ?loc2))\n    :effect (and (open ?loc1 ?dir ?loc2) (not (closed ?loc1 ?dir ?loc2)))\n  )\n  (:action move\n    :parameters (?from - location ?to - location ?dir - direction)\n    :precondition (and (at ?from) (open ?from ?dir ?to))\n    :effect (and (at ?to) (not (at ?from)))\n  )\n)",
+  "pf": "(define (problem exploration-problem)\n  (:domain exploration)\n  (:objects\n    kitchen - location\n    backyard - location\n    driveway - location\n    street - location\n    patio - location\n    pantry - location\n    dining-room - location\n    north - direction\n    south - direction\n    east - direction\n    west - direction\n  )\n  (:init\n    (at driveway)\n    (open backyard south kitchen)\n    (open backyard north driveway)\n    (open backyard west street)\n    (closed backyard east patio)\n    (closed kitchen south pantry)\n    (closed kitchen east dining-room)\n  )\n  (:goal\n    (at patio)\n  )\n)"
+}
+=== END RESPONSE ===
+Parsed df and pf: 
+ (define (domain exploration)
+  (:predicates
+    (at ?l - location)
+    (closed ?l1 - location ?d - direction ?l2 - location)
+    (open ?l1 - location ?d - direction ?l2 - location)
+  )
+  (:action open-door
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+    :precondition (and (at ?loc1) (closed ?loc1 ?dir ?loc2))
+    :effect (and (open ?loc1 ?dir ?loc2) (not (closed ?loc1 ?dir ?loc2)))
+  )
+  (:action move
+    :parameters (?from - location ?to - location ?dir - direction)
+    :precondition (and (at ?from) (open ?from ?dir ?to))
+    :effect (and (at ?to) (not (at ?from)))
+  )
+) 
+ (define (problem exploration-problem)
+  (:domain exploration)
+  (:objects
+    kitchen - location
+    backyard - location
+    driveway - location
+    street - location
+    patio - location
+    pantry - location
+    dining-room - location
+    north - direction
+    south - direction
+    east - direction
+    west - direction
+  )
+  (:init
+    (at driveway)
+    (open backyard south kitchen)
+    (open backyard north driveway)
+    (open backyard west street)
+    (closed backyard east patio)
+    (closed kitchen south pantry)
+    (closed kitchen east dining-room)
+  )
+  (:goal
+    (at patio)
+  )
+) 
+Actions from solver(df, pf): None 
+Raw plan text:  
+--Small Loop--: 2 
+=== PROMPT SENT TO LLM ===
+
+    Please provide the output in strict JSON format, without any additional text or explanation, including a PDDL domain file as 'df' and a PDDL problem file as 'pf'. 
+    The format should strictly be:
+        {
+        "df": "...",
+        "pf": "..."
+        }
+
+
+You are in a partially observable environment that you explore step by step. You must build and update PDDL files of the environment based on only your observations.
+Do not create something not appeared in the observations and also do not miss any observations e.g. through closed doors you may assume a room behind.
+Do not assume that there will be a door connecting rooms.
+
+Your task is always to keep exploration and go to a location you have not visited yet.
+In other words, your goal should go to other not visited location.
+If you enter a room, make sure you put everything you observed such as the direction in the problem file.
+
+Here are your current observations: Action: move north
+You are in the driveway. To the South you see the backyard. 
+
+Here are some valid actions you can take: ['move east', 'move north', 'move south', 'move west', 'open door to east', 'open door to north', 'open door to south', 'open door to west']
+
+You should generate df and pf that strictly follow these action schemas. There are in total 2 actions, that should exactly be the following two:
+1. :action open-door
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+2. :action move
+    :parameters (?from - location ?to - location ?dir - direction)
+You should have a goal in the problem file like this:
+(:goal
+    (at ?location)
+)
+
+
+Note:
+- In problem file's init, you shouldn't have "not ()" but only the single status.
+- In problem file's goal, ?location must be grounded, no variables or quantifiers.
+
+
+This is all the memory you have in this game including each action and its corresponding observations: 
+Action: look around
+You are in the kitchen. To the North you see a closed screen door. To the South you see a closed plain door. To the East you see a closed wood door. 
+Action: open door to north
+You open the screen door, revealing the backyard. 
+Action: move north
+You are in the backyard. To the North you see the driveway. Through an open screen door, to the South you see the kitchen. To the East you see a closed sliding patio door. To the West you see the street. 
+Action: move north
+You are in the driveway. To the South you see the backyard. 
+
+
+You have already generated df and pf files according to the observations.
+This is previous domain file: 
+(define (domain exploration)
+  (:predicates
+    (at ?l - location)
+    (closed ?l1 - location ?d - direction ?l2 - location)
+    (open ?l1 - location ?d - direction ?l2 - location)
+  )
+  (:action open-door
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+    :precondition (and (at ?loc1) (closed ?loc1 ?dir ?loc2))
+    :effect (and (open ?loc1 ?dir ?loc2) (not (closed ?loc1 ?dir ?loc2)))
+  )
+  (:action move
+    :parameters (?from - location ?to - location ?dir - direction)
+    :precondition (and (at ?from) (open ?from ?dir ?to))
+    :effect (and (at ?to) (not (at ?from)))
+  )
+)
+
+This is previous problem file: 
+(define (problem exploration-problem)
+  (:domain exploration)
+  (:objects
+    kitchen - location
+    backyard - location
+    driveway - location
+    street - location
+    patio - location
+    pantry - location
+    dining-room - location
+    north - direction
+    south - direction
+    east - direction
+    west - direction
+  )
+  (:init
+    (at driveway)
+    (open backyard south kitchen)
+    (open backyard north driveway)
+    (open backyard west street)
+    (closed backyard east patio)
+    (closed kitchen south pantry)
+    (closed kitchen east dining-room)
+  )
+  (:goal
+    (at patio)
+  )
+)
+
+
+You made some mistakes when generating those files. Here is the error message: 
+ff: goal can be simplified to FALSE. No plan will solve it
+
+
+Now update the files based on the new observations and feedback. Make minimal but effective changes to fix the issues.
+
+=== END PROMPT ===
+=== RAW LLM RESPONSE ===
+{
+  "df": "(define (domain exploration)\n  (:predicates\n    (at ?l - location)\n    (closed ?l1 - location ?d - direction ?l2 - location)\n    (open ?l1 - location ?d - direction ?l2 - location)\n  )\n  (:action open-door\n    :parameters (?loc1 - location ?loc2 - location ?dir - direction)\n    :precondition (and (at ?loc1) (closed ?loc1 ?dir ?loc2))\n    :effect (and (open ?loc1 ?dir ?loc2) (not (closed ?loc1 ?dir ?loc2)))\n  )\n  (:action move\n    :parameters (?from - location ?to - location ?dir - direction)\n    :precondition (and (at ?from) (open ?from ?dir ?to))\n    :effect (and (at ?to) (not (at ?from)))\n  )\n)",
+  "pf": "(define (problem exploration-problem)\n  (:domain exploration)\n  (:objects\n    kitchen - location\n    backyard - location\n    driveway - location\n    street - location\n    patio - location\n    pantry - location\n    dining-room - location\n    north - direction\n    south - direction\n    east - direction\n    west - direction\n  )\n  (:init\n    (at driveway)\n    (open kitchen south pantry)\n    (open kitchen east dining-room)\n    (open backyard south kitchen)\n    (open backyard north driveway)\n    (open driveway south backyard)\n    (open backyard west street)\n    (closed backyard east patio)\n  )\n  (:goal\n    (at patio)\n  )\n)"
+}
+=== END RESPONSE ===
+Parsed df and pf: 
+ (define (domain exploration)
+  (:predicates
+    (at ?l - location)
+    (closed ?l1 - location ?d - direction ?l2 - location)
+    (open ?l1 - location ?d - direction ?l2 - location)
+  )
+  (:action open-door
+    :parameters (?loc1 - location ?loc2 - location ?dir - direction)
+    :precondition (and (at ?loc1) (closed ?loc1 ?dir ?loc2))
+    :effect (and (open ?loc1 ?dir ?loc2) (not (closed ?loc1 ?dir ?loc2)))
+  )
+  (:action move
+    :parameters (?from - location ?to - location ?dir - direction)
+    :precondition (and (at ?from) (open ?from ?dir ?to))
+    :effect (and (at ?to) (not (at ?from)))
+  )
+) 
+ (define (problem exploration-problem)
+  (:domain exploration)
+  (:objects
+    kitchen - location
+    backyard - location
+    driveway - location
+    street - location
+    patio - location
+    pantry - location
+    dining-room - location
+    north - direction
+    south - direction
+    east - direction
+    west - direction
+  )
+  (:init
+    (at driveway)
+    (open kitchen south pantry)
+    (open kitchen east dining-room)
+    (open backyard south kitchen)
+    (open backyard north driveway)
+    (open driveway south backyard)
+    (open backyard west street)
+    (closed backyard east patio)
+  )
+  (:goal
+    (at patio)
+  )
+) 
+Actions from solver(df, pf): ['move south', 'open door to east', 'move east'] 
+Raw plan text: (MOVE DRIVEWAY BACKYARD SOUTH)
+(OPEN-DOOR BACKYARD PATIO EAST)
+(MOVE BACKYARD PATIO EAST)
+ 
+Current action_queue: ['move south', 'open door to east', 'move east'] 
+> move south 
+ You are in the backyard. In one part of the room you see a barbeque. There is also a workbench, that has nothing on it. You also see a patio chair, that has nothing on it. In another part of the room you see a patio table, that has nothing on it. In one part of the room you see a clothes line, that has nothing on it. There is also a garden, that has nothing on it. 
+To the North you see the driveway. Through an open screen door, to the South you see the kitchen. To the East you see a closed sliding patio door. To the West you see the street.  
+Small Loop, action_queue: ['open door to east', 'move east'] 
+Current action_queue: ['open door to east', 'move east'] 
+> open door to east 
+ You open the sliding patio door, revealing the corridor.  
+Small Loop, action_queue: ['move east'] 
+Current action_queue: ['move east'] 
+Coin found!
+Final obs: You take the coin. 

@@ -1,0 +1,1 @@
+(define (domain exploration) (:requirements :strips) (:predicates (at ?agent ?location) (door-open ?loc1 ?loc2 ?dir)) (:action open-door :parameters (?loc1 - location ?loc2 - location ?dir - direction) :effect (door-open ?loc1 ?loc2 ?dir)) (:action move :parameters (?from - location ?to - location ?dir - direction) :effect (and (not (at agent ?from)) (at agent ?to))))
