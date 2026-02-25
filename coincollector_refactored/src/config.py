@@ -8,5 +8,5 @@ ENV_PARAMS = {
 MAX_STEPS = 20
 
 OPENAI_MODELS_LIST = [
-    "gpt-4o", "o3-mini", "gpt-4.1", "o4-mini", "gpt-5-nano-2025-08-07", "gpt-5-nano"
+    "gpt-4o", "o3-mini", "gpt-4.1", "o4-mini", "gpt-5-nano-2025-08-07", "gpt-5-nano", "gpt-5-mini-2025-08-07"
 ]

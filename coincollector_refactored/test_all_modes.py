@@ -1,4 +1,6 @@
 import os
+from datetime import date
+import argparse
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(_THIS_DIR)
 print("[INFO] CWD set to:", os.getcwd())
@@ -11,8 +13,17 @@ from src.pddl_engine import (
     run_baseline_model,
 )
 
-MODEL_NAME   = "deepseek-reasoner" # allenai/Olmo-3-32B-Think, Qwen/Qwen3-32B, gpt-4.1, o3-mini, deepseek-reasoner
-FOLDER_NAME  = "CC_0119_final"
+parser = argparse.ArgumentParser()
+parser.add_argument("--model", help="which model to use")
+parser.add_argument("--build_action", action='store_true')
+parser.add_argument("--save_artifacts", action='store_true')
+parser.add_argument("--run_after_build", action='store_true')
+parser.add_argument("--run_translator", action='store_true')
+parser.add_argument("--run_direct_planner", action='store_true')
+args = parser.parse_args()
+MODEL_NAME   = args.model # allenai/Olmo-3-32B-Think, Qwen/Qwen3-32B, gpt-4.1, o3-mini, deepseek-reasoner
+start_date = date.today()
+FOLDER_NAME  = f"CC_{start_date}_{MODEL_NAME}"
 RESULT_NAME  = FOLDER_NAME
 
 
@@ -28,14 +39,14 @@ GOAL_TYPE    = "detailed"    # or "subgoal"
 ACTION_PER_SCHEMA_TARGET      = 1
 ACTION_REQUIRE_ALL_DIRECTIONS = True
 
-DO_BUILD_ACTION = True  # Only action diversity approach is used
+DO_BUILD_ACTION = args.build_action  # Only action diversity approach is used
 
-SAVE_ARTIFACTS  = True
-RUN_AFTER_BUILD = True   # if True, call run_iterative_model_initDF with the generated DF
+SAVE_ARTIFACTS  = args.save_artifacts
+RUN_AFTER_BUILD = args.run_after_build   # if True, call run_iterative_model_initDF with the generated DF
 
 # other modes without seed DF
-DO_RUN_TRANSLATOR        = True  # run_iterative_model
-DO_RUN_DIRECT_PLANNER    = True  # run_baseline_model
+DO_RUN_TRANSLATOR        = args.run_translator  # run_iterative_model
+DO_RUN_DIRECT_PLANNER    = args.run_direct_planner  # run_baseline_model
 
 def banner(title: str):
     print("\n" + "="*80)

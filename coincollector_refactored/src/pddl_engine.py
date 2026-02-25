@@ -34,7 +34,8 @@ def run_llm(prompt: str, model_name: str, system_prompt, response_model = None) 
     raw_response = None 
 
     if "deepseek" in model_name.lower():
-        client = OpenAI(api_key=os.environ.get('DEEPSEEK_API_KEY'), base_url="https://api.deepseek.com")
+        api_key = open(f'../../../_private/key_deepseek.txt').read()
+        client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com")
         response = client.chat.completions.create(
             model="deepseek-reasoner",
             messages=messages,
@@ -60,9 +61,14 @@ def run_llm(prompt: str, model_name: str, system_prompt, response_model = None) 
                 "text_format": response_model,}
 
         if any(model_name.startswith(base) for base in OPENAI_MODELS_LIST):
-            client = OpenAI()
+            api_key = open(f'../../../_private/key_pddlego.txt').read()
+            client = OpenAI(api_key=api_key)
             if model_name.startswith("gpt-"):
                 params.pop("reasoning", None)
+        elif "gemini" in model_name:
+            api_key = open(f'../../../_private/key_gemini.txt').read()
+            client = OpenAI(api_key=api_key, base_url="https://generativelanguage.googleapis.com/v1beta/openai/")
+            params.pop("reasoning", None)
         else:
             client = OpenAI(
                 base_url="http://localhost:8000/v1",
