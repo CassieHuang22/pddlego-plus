@@ -63,12 +63,11 @@ def run_llm(prompt: str, model_name: str, system_prompt, response_model = None) 
         if any(model_name.startswith(base) for base in OPENAI_MODELS_LIST):
             api_key = open(f'../../../_private/key_pddlego.txt').read()
             client = OpenAI(api_key=api_key)
-            if model_name.startswith("gpt-"):
+            if model_name.startswith("gpt-4"):
                 params.pop("reasoning", None)
         elif "gemini" in model_name:
             api_key = open(f'../../../_private/key_gemini.txt').read()
             client = OpenAI(api_key=api_key, base_url="https://generativelanguage.googleapis.com/v1beta/openai/")
-            params.pop("reasoning", None)
         else:
             client = OpenAI(
                 base_url="http://localhost:8000/v1",
